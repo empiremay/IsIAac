@@ -19,17 +19,25 @@ public class Rectangle {
 	}
 	
 	public void Draw(Graphics bbg) {
-		bbg.setColor(new Color(55+200-(int)life*2, 0, 55+(int)life*2));
+		bbg.setColor(new Color(55+200-(int)life*2, 55+(int)life*2, 55));
 		bbg.fillRect(x, y, xSize, ySize);
 	}
 	
-	public void Update(ArrayList missiles) {
-		//Comprobar posibles colisiones con misiles
-		for(int i=0; i<missiles.size(); i++) {
-			Missile m=(Missile)missiles.get(i);
+	public void Update(ArrayList playerMissiles, ArrayList eviliaMissiles) {
+		//Comprobar posibles colisiones con misiles de Player 1
+		for(int i=0; i<playerMissiles.size(); i++) {
+			Missile m=(Missile)playerMissiles.get(i);
 			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
 				life-=m.getSize()*2;
-				missiles.remove(i);
+				playerMissiles.remove(i);
+			}
+		}
+		//Comprobar posibles colisiones con misiles de evilIA
+		for(int i=0; i<eviliaMissiles.size(); i++) {
+			Missile m=(Missile)eviliaMissiles.get(i);
+			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
+				life-=m.getSize()*2;
+				eviliaMissiles.remove(i);
 			}
 		}
 	}

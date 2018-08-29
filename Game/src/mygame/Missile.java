@@ -7,22 +7,27 @@ public class Missile {
 	int y;
 	double size;
 	int direction;	//up 0, down 1, left 2, right 3
+	Color color;
+	int avance;
+	double missileReduction;
 	
-	public Missile(int x, int y, int size, int direction) {
+	public Missile(int x, int y, int size, int direction, Color color, int avance, double missileReduction) {
 		this.x=x;
 		this.y=y;
 		this.size=size;
 		this.direction=direction;
+		this.color=color;
+		this.avance=avance;
+		this.missileReduction=missileReduction;
 	}
 	
 	public void Draw(Graphics bbg) {
-		bbg.setColor(Color.RED);
+		bbg.setColor(color);
 		bbg.fillOval(x-(int)(size/2), y-(int)(size/2), (int)size, (int)size);
 	}
 	
 	public void Update() {
-		size-=0.125;
-		int avance=5;
+		size-=missileReduction;
 		if(direction==0) {
 			y-=avance;
 			if(y<=-(int)(size/2)) {
@@ -60,4 +65,6 @@ public class Missile {
 	public int getX() {return x;}
 	
 	public int getY() {return y;}
+	
+	public int getDir() {return direction;}
 }

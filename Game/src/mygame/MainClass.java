@@ -20,9 +20,15 @@ public class MainClass extends JFrame {
 	long tiempoUltimoMisil=0;
 	long tiempoEntreMisiles=200;
 	int missileSize=PLAYER_WIDTH/2+1;
+	int missileSeparation=2;
+	Color missileColor=Color.RED;
+	int avanceMisil=5;		//5
+	double missileReduction=0.125;	//0.125;
 	
-	ArrayList missiles=new ArrayList();
+	ArrayList playerMissiles=new ArrayList();
+	ArrayList eviliaMissiles=new ArrayList();
 	ArrayList rectangles=new ArrayList();
+	ArrayList evilias=new ArrayList();
 	
 	int x=0;
 	int y=0;
@@ -56,12 +62,17 @@ public class MainClass extends JFrame {
 		input=new InputHandler(this);
 		
 		InitializeRectangles();
+		InitializeEvilIA();
 	}
 	
 	void InitializeRectangles() {
 		int ancho=rnd.nextInt(40)+20;
 		int alto=rnd.nextInt(40)+20;
 		rectangles.add(new Rectangle(rnd.nextInt(WINDOW_WIDTH-ancho), rnd.nextInt(WINDOW_HEIGHT-ancho), ancho, alto, 100));
+	}
+	
+	void InitializeEvilIA() {
+		evilias.add(new EvilIA(rnd.nextInt(WINDOW_WIDTH-EvilIA.WIDTH), rnd.nextInt(WINDOW_HEIGHT-EvilIA.HEIGHT), 100000));
 	}
 	
 	void UpdatePlayerPosition() {
@@ -91,39 +102,47 @@ public class MainClass extends JFrame {
 		}
 	}
 	
-	void UpdatePlayerMissile() {
-		int separation=2;
-		
+	void UpdatePlayerMissiles() {
 		if(input.isKeyDown(KeyEvent.VK_W)) {
 			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				missiles.add(new Missile(x+PLAYER_WIDTH/2, y-separation-missileSize/2, missileSize, 0));
+				playerMissiles.add(new Missile(x+PLAYER_WIDTH/2, y-missileSeparation-missileSize/2, missileSize, 0, missileColor, avanceMisil, missileReduction));
 				tiempoUltimoMisil=System.currentTimeMillis();
 			}
 		}
 		if(input.isKeyDown(KeyEvent.VK_S)) {
 			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				missiles.add(new Missile(x+PLAYER_WIDTH/2, y+PLAYER_HEIGHT+separation+missileSize/2, missileSize, 1));
+				playerMissiles.add(new Missile(x+PLAYER_WIDTH/2, y+PLAYER_HEIGHT+missileSeparation+missileSize/2, missileSize, 1, missileColor, avanceMisil, missileReduction));
 				tiempoUltimoMisil=System.currentTimeMillis();
 			}
 		}
 		if(input.isKeyDown(KeyEvent.VK_A)) {
 			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				missiles.add(new Missile(x-separation-missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 2));
+				playerMissiles.add(new Missile(x-missileSeparation-missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 2, missileColor, avanceMisil, missileReduction));
 				tiempoUltimoMisil=System.currentTimeMillis();
 			}
 		}
 		if(input.isKeyDown(KeyEvent.VK_D)) {
 			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				missiles.add(new Missile(x+PLAYER_WIDTH+separation+missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 3));
+				playerMissiles.add(new Missile(x+PLAYER_WIDTH+missileSeparation+missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 3, missileColor, avanceMisil, missileReduction));
 				tiempoUltimoMisil=System.currentTimeMillis();
 			}
 		}
 		
-		for(int i=0; i<missiles.size(); i++) {
-			Missile m=(Missile)missiles.get(i);
+		for(int i=0; i<playerMissiles.size(); i++) {
+			Missile m=(Missile)playerMissiles.get(i);
 			m.Update();
 			if(m.isDead()) {
-				missiles.remove(i);
+				playerMissiles.remove(i);
+			}
+		}
+	}
+	
+	void UpdateEvilIAMissiles() {
+		for(int i=0; i<eviliaMissiles.size(); i++) {
+			Missile m=(Missile)eviliaMissiles.get(i);
+			m.Update();
+			if(m.isDead()) {
+				eviliaMissiles.remove(i);
 			}
 		}
 	}
@@ -131,7 +150,7 @@ public class MainClass extends JFrame {
 	void UpdateRectangles() {
 		for(int i=0; i<rectangles.size(); i++) {
 			Rectangle r=(Rectangle)rectangles.get(i);
-			r.Update(missiles);
+			r.Update(playerMissiles, eviliaMissiles);
 			if(r.isDead()) {
 				rectangles.remove(i);
 				int ancho=rnd.nextInt(40)+20;
@@ -149,9 +168,21 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	void UpdateEvilIA() {
+		for(int i=0; i<evilias.size(); i++) {
+			EvilIA e=(EvilIA)evilias.get(i);
+			e.Update(playerMissiles, this, eviliaMissiles);
+			if(e.isDead()) {
+				evilias.remove(i);
+			}
+		}
+	}
+	
 	void Update() {
 		UpdatePlayerPosition();
-		UpdatePlayerMissile();
+		UpdatePlayerMissiles();
+		UpdateEvilIA();
+		UpdateEvilIAMissiles();
 		UpdateRectangles();
 	}
 	
@@ -161,7 +192,13 @@ public class MainClass extends JFrame {
 	}
 	
 	void DrawMissiles(Graphics bbg) {
-		for(Iterator it=missiles.iterator(); it.hasNext();) {
+		//Draw Player 1 missiles
+		for(Iterator it=playerMissiles.iterator(); it.hasNext();) {
+			Missile m=(Missile)it.next();
+			m.Draw(bbg);
+		}
+		//Draw evilIA missiles
+		for(Iterator it=eviliaMissiles.iterator(); it.hasNext();) {
 			Missile m=(Missile)it.next();
 			m.Draw(bbg);
 		}
@@ -174,6 +211,13 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	void DrawEvilIAs(Graphics bbg) {
+		for(Iterator it=evilias.iterator(); it.hasNext();) {
+			EvilIA e=(EvilIA)it.next();
+			e.Draw(bbg);
+		}
+	}
+	
 	void Draw() {
 		Graphics g=getGraphics();
 		Graphics bbg=backBuffer.getGraphics();
@@ -183,10 +227,15 @@ public class MainClass extends JFrame {
 		
 		DrawPlayer(bbg);	//Player 1
 		DrawMissiles(bbg);
+		DrawEvilIAs(bbg);
 		DrawRectangles(bbg);
 		
 		g.drawImage(backBuffer, insets.left, insets.top, this);
 	}
+	
+	public int getX() {return x;}
+	
+	public int getY() {return y;}
 	
 	public static void main(String[] args) {
 		MainClass game=new MainClass();
