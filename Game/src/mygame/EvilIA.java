@@ -1,6 +1,7 @@
 package mygame;
+import java.util.List;
+import java.util.ArrayList;
 import java.awt.*;
-import java.util.*;
 
 public class EvilIA {
 	
@@ -16,7 +17,7 @@ public class EvilIA {
 	Color missileColor=Color.BLACK;
 	int avanceMisil=3;
 	double missileReduction=0.0625;
-	int longitudCuadrante=100;
+	int longitudCuadrante=60;
 	int avance=5;
 	
 	public EvilIA(int x, int y, double life) {
@@ -30,15 +31,15 @@ public class EvilIA {
 		bbg.fillRect(x, y, WIDTH, HEIGHT);
 	}
 	
-	public void UpdateMovement(ArrayList playerMissiles) {
+	public void UpdateMovement(List<Missile> playerMissiles) {
 		int scoreIzq=0;
 		int scoreDer=0;
 		int scoreArr=0;
 		int scoreAbj=0;
 		
 		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=(Missile)playerMissiles.get(i);
-			if(((m.getX()+m.getSize()/2)>(x-longitudCuadrante)) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<x)) {	//Hay colisión
+			Missile m=playerMissiles.get(i);
+			if((((m.getX()+m.getSize()/2)>(x-longitudCuadrante)) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<x)) || (((m.getX()+m.getSize()/2)>(MainClass.WINDOW_WIDTH-1-(longitudCuadrante-x))) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(MainClass.WINDOW_WIDTH-1)))) {	//Hay colisión
 				if(m.getDir()==3) {
 					scoreIzq+=m.getSize()*2;
 				}
@@ -46,7 +47,7 @@ public class EvilIA {
 					scoreIzq+=m.getSize();
 				}
 			}
-			if(((m.getX()+m.getSize()/2)>(x+WIDTH)) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+WIDTH+longitudCuadrante))) {	//Hay colisión
+			if((((m.getX()+m.getSize()/2)>(x+WIDTH)) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+WIDTH+longitudCuadrante))) || (((m.getX()+m.getSize()/2)>0) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(longitudCuadrante-(MainClass.WINDOW_WIDTH-1-(x+WIDTH)))))) {	//Hay colisión
 				if(m.getDir()==2) {
 					scoreDer+=m.getSize()*2;
 				}
@@ -54,7 +55,7 @@ public class EvilIA {
 					scoreDer+=m.getSize();
 				}
 			}
-			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<y) && ((m.getY()+m.getSize()/2)>(y-longitudCuadrante)) && ((m.getX()-m.getSize()/2)<(x+WIDTH))) {	//Hay colisión
+			if((((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<y) && ((m.getY()+m.getSize()/2)>(y-longitudCuadrante)) && ((m.getX()-m.getSize()/2)<(x+WIDTH))) || (((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(MainClass.WINDOW_HEIGHT-1)) && ((m.getY()+m.getSize()/2)>(MainClass.WINDOW_HEIGHT-1-(longitudCuadrante-y))) && ((m.getX()-m.getSize()/2)<(x+WIDTH)))) {	//Hay colisión
 				if(m.getDir()==1) {
 					scoreArr+=m.getSize()*2;
 				}
@@ -62,7 +63,7 @@ public class EvilIA {
 					scoreArr+=m.getSize();
 				}
 			}
-			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+HEIGHT+longitudCuadrante)) && ((m.getY()+m.getSize()/2)>(y+HEIGHT)) && ((m.getX()-m.getSize()/2)<(x+WIDTH))) {	//Hay colisión
+			if((((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+HEIGHT+longitudCuadrante)) && ((m.getY()+m.getSize()/2)>(y+HEIGHT)) && ((m.getX()-m.getSize()/2)<(x+WIDTH))) || (((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(longitudCuadrante-(MainClass.WINDOW_HEIGHT-1-(y+HEIGHT)))) && ((m.getY()+m.getSize()/2)>0) && ((m.getX()-m.getSize()/2)<(x+WIDTH)))) {
 				if(m.getDir()==0) {
 					scoreAbj+=m.getSize()*2;
 				}
@@ -73,6 +74,10 @@ public class EvilIA {
 		}
 
 		if(scoreAbj==0 && scoreArr==0 && scoreIzq==0 && scoreDer==0) {
+			return;
+		}
+		if(scoreDer<=scoreArr && scoreDer<=scoreIzq && scoreDer<=scoreAbj) {
+			MoveRight();
 			return;
 		}
 		if(scoreAbj<=scoreArr && scoreAbj<=scoreIzq && scoreAbj<=scoreDer) {
@@ -86,9 +91,6 @@ public class EvilIA {
 		if(scoreIzq<=scoreArr && scoreIzq<=scoreAbj && scoreIzq<=scoreDer) {
 			MoveLeft();
 			return;
-		}
-		if(scoreDer<=scoreArr && scoreDer<=scoreIzq && scoreDer<=scoreAbj) {
-			MoveRight();
 		}
 	}
 	
@@ -120,10 +122,10 @@ public class EvilIA {
 		}
 	}
 	
-	public void Update(ArrayList playerMissiles, MainClass player, ArrayList eviliaMissiles) {
+	public void Update(List<Missile> playerMissiles, MainClass player, List<Missile> eviliaMissiles) {
 		//Comprobar posibles colisiones con misiles de Player 1
 		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=(Missile)playerMissiles.get(i);
+			Missile m=playerMissiles.get(i);
 			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+WIDTH))) {	//Hay colisión
 				life-=m.getSize()*3;
 				playerMissiles.remove(i);

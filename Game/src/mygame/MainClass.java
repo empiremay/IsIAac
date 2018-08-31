@@ -1,4 +1,6 @@
 package mygame;
+import java.util.List;
+import java.util.ArrayList;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -25,10 +27,10 @@ public class MainClass extends JFrame {
 	int avanceMisil=5;		//5
 	double missileReduction=0.125;	//0.125;
 	
-	ArrayList playerMissiles=new ArrayList();
-	ArrayList eviliaMissiles=new ArrayList();
-	ArrayList rectangles=new ArrayList();
-	ArrayList evilias=new ArrayList();
+	List<Missile> playerMissiles=new ArrayList<Missile>();
+	List<Missile> eviliaMissiles=new ArrayList<Missile>();
+	List<Rectangle> rectangles=new ArrayList<Rectangle>();
+	List<EvilIA> evilias=new ArrayList<EvilIA>();
 	
 	int x=0;
 	int y=0;
@@ -72,7 +74,7 @@ public class MainClass extends JFrame {
 	}
 	
 	void InitializeEvilIA() {
-		evilias.add(new EvilIA(rnd.nextInt(WINDOW_WIDTH-EvilIA.WIDTH), rnd.nextInt(WINDOW_HEIGHT-EvilIA.HEIGHT), 100000));
+		evilias.add(new EvilIA(rnd.nextInt(WINDOW_WIDTH-EvilIA.WIDTH), rnd.nextInt(WINDOW_HEIGHT-EvilIA.HEIGHT), 100));
 	}
 	
 	void UpdatePlayerPosition() {
@@ -129,7 +131,7 @@ public class MainClass extends JFrame {
 		}
 		
 		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=(Missile)playerMissiles.get(i);
+			Missile m=playerMissiles.get(i);
 			m.Update();
 			if(m.isDead()) {
 				playerMissiles.remove(i);
@@ -139,7 +141,7 @@ public class MainClass extends JFrame {
 	
 	void UpdateEvilIAMissiles() {
 		for(int i=0; i<eviliaMissiles.size(); i++) {
-			Missile m=(Missile)eviliaMissiles.get(i);
+			Missile m=eviliaMissiles.get(i);
 			m.Update();
 			if(m.isDead()) {
 				eviliaMissiles.remove(i);
@@ -149,7 +151,7 @@ public class MainClass extends JFrame {
 	
 	void UpdateRectangles() {
 		for(int i=0; i<rectangles.size(); i++) {
-			Rectangle r=(Rectangle)rectangles.get(i);
+			Rectangle r=rectangles.get(i);
 			r.Update(playerMissiles, eviliaMissiles);
 			if(r.isDead()) {
 				rectangles.remove(i);
@@ -170,7 +172,7 @@ public class MainClass extends JFrame {
 	
 	void UpdateEvilIA() {
 		for(int i=0; i<evilias.size(); i++) {
-			EvilIA e=(EvilIA)evilias.get(i);
+			EvilIA e=evilias.get(i);
 			e.Update(playerMissiles, this, eviliaMissiles);
 			if(e.isDead()) {
 				evilias.remove(i);
@@ -193,27 +195,27 @@ public class MainClass extends JFrame {
 	
 	void DrawMissiles(Graphics bbg) {
 		//Draw Player 1 missiles
-		for(Iterator it=playerMissiles.iterator(); it.hasNext();) {
-			Missile m=(Missile)it.next();
+		for(int i=0; i<playerMissiles.size(); i++) {
+			Missile m=playerMissiles.get(i);
 			m.Draw(bbg);
 		}
 		//Draw evilIA missiles
-		for(Iterator it=eviliaMissiles.iterator(); it.hasNext();) {
-			Missile m=(Missile)it.next();
+		for(int i=0; i<eviliaMissiles.size(); i++) {
+			Missile m=eviliaMissiles.get(i);
 			m.Draw(bbg);
 		}
 	}
 	
 	void DrawRectangles(Graphics bbg) {
-		for(Iterator it=rectangles.iterator(); it.hasNext();) {
-			Rectangle r=(Rectangle)it.next();
+		for(int i=0; i<rectangles.size(); i++) {
+			Rectangle r=rectangles.get(i);
 			r.Draw(bbg);
 		}
 	}
 	
 	void DrawEvilIAs(Graphics bbg) {
-		for(Iterator it=evilias.iterator(); it.hasNext();) {
-			EvilIA e=(EvilIA)it.next();
+		for(int i=0; i<evilias.size(); i++) {
+			EvilIA e=evilias.get(i);
 			e.Draw(bbg);
 		}
 	}

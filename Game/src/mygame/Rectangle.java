@@ -1,6 +1,7 @@
 package mygame;
+import java.util.List;
+import java.util.ArrayList;
 import java.awt.*;
-import java.util.*;
 
 public class Rectangle {
 	
@@ -23,10 +24,10 @@ public class Rectangle {
 		bbg.fillRect(x, y, xSize, ySize);
 	}
 	
-	public void Update(ArrayList playerMissiles, ArrayList eviliaMissiles) {
+	public void Update(List<Missile> playerMissiles, List<Missile> eviliaMissiles) {
 		//Comprobar posibles colisiones con misiles de Player 1
 		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=(Missile)playerMissiles.get(i);
+			Missile m=playerMissiles.get(i);
 			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
 				life-=m.getSize()*2;
 				playerMissiles.remove(i);
@@ -34,7 +35,7 @@ public class Rectangle {
 		}
 		//Comprobar posibles colisiones con misiles de evilIA
 		for(int i=0; i<eviliaMissiles.size(); i++) {
-			Missile m=(Missile)eviliaMissiles.get(i);
+			Missile m=eviliaMissiles.get(i);
 			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
 				life-=m.getSize()*2;
 				eviliaMissiles.remove(i);
