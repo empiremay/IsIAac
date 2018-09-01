@@ -24,13 +24,17 @@ public class Rectangle {
 		bbg.fillRect(x, y, xSize, ySize);
 	}
 	
-	public void Update(List<Missile> playerMissiles, List<Missile> eviliaMissiles) {
-		//Comprobar posibles colisiones con misiles de Player 1
-		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=playerMissiles.get(i);
-			if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
-				life-=m.getSize()*2;
-				playerMissiles.remove(i);
+	public void Update(List<PlayerMP> players, List<Missile> eviliaMissiles) {
+		//Comprobar posibles colisiones con los misiles de todos los jugadores
+		for(int i=0; i<players.size(); i++) {
+			PlayerMP p=players.get(i);
+			List<Missile> missiles=p.GetMissiles();
+			for(int j=0; j<missiles.size(); j++) {
+				Missile m=missiles.get(j);
+				if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+ySize)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+xSize))) {	//Hay colisión
+					life-=m.getSize()*2;
+					missiles.remove(j);
+				}
 			}
 		}
 		//Comprobar posibles colisiones con misiles de evilIA

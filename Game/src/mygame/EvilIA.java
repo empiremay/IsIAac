@@ -2,6 +2,7 @@ package mygame;
 import java.util.List;
 import java.util.ArrayList;
 import java.awt.*;
+import java.lang.Math;
 
 public class EvilIA {
 	
@@ -17,8 +18,9 @@ public class EvilIA {
 	Color missileColor=Color.BLACK;
 	int avanceMisil=3;
 	double missileReduction=0.0625;
-	int longitudCuadrante=60;
+	int longitudCuadrante=100;	//Para Missiles
 	int avance=5;
+	int distanceFromPlayer=80;	//Para Player
 	
 	public EvilIA(int x, int y, double life) {
 		this.x=x;
@@ -31,7 +33,7 @@ public class EvilIA {
 		bbg.fillRect(x, y, WIDTH, HEIGHT);
 	}
 	
-	public void UpdateMovement(List<Missile> playerMissiles) {
+	public void UpdateMovement(List<Missile> playerMissiles, Player player) {
 		int scoreIzq=0;
 		int scoreDer=0;
 		int scoreArr=0;
@@ -72,8 +74,10 @@ public class EvilIA {
 				}
 			}
 		}
+		
+		MoveAwayFromPlayer(player);
 
-		if(scoreAbj==0 && scoreArr==0 && scoreIzq==0 && scoreDer==0) {
+		/*if(scoreAbj==0 && scoreArr==0 && scoreIzq==0 && scoreDer==0) {
 			return;
 		}
 		if(scoreDer<=scoreArr && scoreDer<=scoreIzq && scoreDer<=scoreAbj) {
@@ -91,6 +95,12 @@ public class EvilIA {
 		if(scoreIzq<=scoreArr && scoreIzq<=scoreAbj && scoreIzq<=scoreDer) {
 			MoveLeft();
 			return;
+		}*/
+	}
+	
+	void MoveAwayFromPlayer(Player player) {
+		if(Math.sqrt(Math.pow(x-player.getX(), 2) + Math.pow(y-player.getY(), 2))<=distanceFromPlayer) {
+			MoveUp();
 		}
 	}
 	
@@ -122,7 +132,7 @@ public class EvilIA {
 		}
 	}
 	
-	public void Update(List<Missile> playerMissiles, MainClass player, List<Missile> eviliaMissiles) {
+	public void Update(List<Missile> playerMissiles, Player player, List<Missile> eviliaMissiles) {
 		//Comprobar posibles colisiones con misiles de Player 1
 		for(int i=0; i<playerMissiles.size(); i++) {
 			Missile m=playerMissiles.get(i);
@@ -131,7 +141,7 @@ public class EvilIA {
 				playerMissiles.remove(i);
 			}
 		}
-		UpdateMovement(playerMissiles);
+		UpdateMovement(playerMissiles, player);
 		//Disparar en función de donde esté Player 1
 		if((x+missileSize)>player.getX() && (x-missileSize)<player.getX()) {	//Disparar arriba o abajo
 			if(y>player.getY()) {	//Disparar arriba

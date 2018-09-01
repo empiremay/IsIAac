@@ -5,35 +5,33 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
+import mygame.net.GameClient;
+import mygame.net.GameServer;
+import mygame.net.packets.*;
+
 import java.util.*;
 
 public class MainClass extends JFrame {
 	
-	static final int WINDOW_WIDTH=500;
-	static final int WINDOW_HEIGHT=500;
-	static final int PLAYER_WIDTH=20;
-	static final int PLAYER_HEIGHT=20;
+	private static final long serialVersionUID = 1L;
+	public static final int WINDOW_WIDTH=500;
+	public static final int WINDOW_HEIGHT=500;
 	static Random rnd=new Random();
 	boolean isRunning=true;
 	int fps=60;
 	BufferedImage backBuffer;
 	Insets insets;
-	InputHandler input;
-	long tiempoUltimoMisil=0;
-	long tiempoEntreMisiles=200;
-	int missileSize=PLAYER_WIDTH/2+1;
-	int missileSeparation=2;
-	Color missileColor=Color.RED;
-	int avanceMisil=5;		//5
-	double missileReduction=0.125;	//0.125;
+	public InputHandler input;
 	
-	List<Missile> playerMissiles=new ArrayList<Missile>();
+	List<PlayerMP> players=new ArrayList<PlayerMP>();		//MP Players, including player1
 	List<Missile> eviliaMissiles=new ArrayList<Missile>();
 	List<Rectangle> rectangles=new ArrayList<Rectangle>();
 	List<EvilIA> evilias=new ArrayList<EvilIA>();
 	
-	int x=0;
-	int y=0;
+	private GameClient socketClient;
+	private GameServer socketServer;
 	
 	public void run() {
 		Initialize();
@@ -52,6 +50,7 @@ public class MainClass extends JFrame {
 	}
 	
 	void Initialize() {
+		//Initialize first game things
 		setTitle("Game");
 		setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 		setResizable(false);
@@ -63,8 +62,26 @@ public class MainClass extends JFrame {
 		backBuffer=new BufferedImage(WINDOW_WIDTH, WINDOW_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		input=new InputHandler(this);
 		
+		
+		//Initialize net things
+		//String ip_publica="84.125.220.44";
+		if(JOptionPane.showConfirmDialog(this, "Do you want to run the server?")==0) {
+			socketServer=new GameServer(this);
+			socketServer.start();
+		}
+		/*else {
+			ip_publica=JOptionPane.showInputDialog("Pon tu ip publica aqui");
+		}*/
+		socketClient=new GameClient(this, "localhost");
+		socketClient.start();
+		socketClient.sendData("ping".getBytes());
+		
+		String username=JOptionPane.showInputDialog(this, "Your username:");
+		Packet00Login loginPacket=new Packet00Login(username);
+		loginPacket.writeData(socketClient);
+		
 		InitializeRectangles();
-		InitializeEvilIA();
+		//InitializeEvilIA();
 	}
 	
 	void InitializeRectangles() {
@@ -75,68 +92,6 @@ public class MainClass extends JFrame {
 	
 	void InitializeEvilIA() {
 		evilias.add(new EvilIA(rnd.nextInt(WINDOW_WIDTH-EvilIA.WIDTH), rnd.nextInt(WINDOW_HEIGHT-EvilIA.HEIGHT), 100));
-	}
-	
-	void UpdatePlayerPosition() {
-		if(input.isKeyDown(KeyEvent.VK_RIGHT)) {
-			x+=5;
-			if(x>=WINDOW_WIDTH-PLAYER_WIDTH/2) {
-				x=-PLAYER_WIDTH/2;
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_LEFT)) {
-			x-=5;
-			if(x<=-PLAYER_WIDTH/2) {
-				x=WINDOW_WIDTH-PLAYER_WIDTH/2;
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_UP)) {
-			y-=5;
-			if(y<=-PLAYER_HEIGHT/2) {
-				y=WINDOW_HEIGHT-PLAYER_HEIGHT/2;
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_DOWN)) {
-			y+=5;
-			if(y>=WINDOW_HEIGHT-PLAYER_HEIGHT/2) {
-				y=-PLAYER_HEIGHT/2;
-			}
-		}
-	}
-	
-	void UpdatePlayerMissiles() {
-		if(input.isKeyDown(KeyEvent.VK_W)) {
-			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				playerMissiles.add(new Missile(x+PLAYER_WIDTH/2, y-missileSeparation-missileSize/2, missileSize, 0, missileColor, avanceMisil, missileReduction));
-				tiempoUltimoMisil=System.currentTimeMillis();
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_S)) {
-			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				playerMissiles.add(new Missile(x+PLAYER_WIDTH/2, y+PLAYER_HEIGHT+missileSeparation+missileSize/2, missileSize, 1, missileColor, avanceMisil, missileReduction));
-				tiempoUltimoMisil=System.currentTimeMillis();
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_A)) {
-			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				playerMissiles.add(new Missile(x-missileSeparation-missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 2, missileColor, avanceMisil, missileReduction));
-				tiempoUltimoMisil=System.currentTimeMillis();
-			}
-		}
-		if(input.isKeyDown(KeyEvent.VK_D)) {
-			if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-				playerMissiles.add(new Missile(x+PLAYER_WIDTH+missileSeparation+missileSize/2, y+PLAYER_HEIGHT/2, missileSize, 3, missileColor, avanceMisil, missileReduction));
-				tiempoUltimoMisil=System.currentTimeMillis();
-			}
-		}
-		
-		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=playerMissiles.get(i);
-			m.Update();
-			if(m.isDead()) {
-				playerMissiles.remove(i);
-			}
-		}
 	}
 	
 	void UpdateEvilIAMissiles() {
@@ -152,7 +107,7 @@ public class MainClass extends JFrame {
 	void UpdateRectangles() {
 		for(int i=0; i<rectangles.size(); i++) {
 			Rectangle r=rectangles.get(i);
-			r.Update(playerMissiles, eviliaMissiles);
+			r.Update(players, eviliaMissiles);
 			if(r.isDead()) {
 				rectangles.remove(i);
 				int ancho=rnd.nextInt(40)+20;
@@ -164,40 +119,55 @@ public class MainClass extends JFrame {
 					alto=rnd.nextInt(40)+20;
 					rectangles.add(new Rectangle(rnd.nextInt(WINDOW_WIDTH-ancho), rnd.nextInt(WINDOW_HEIGHT-ancho), ancho, alto, 100));
 				}
-				//Mejorar arma
-				missileSize++;
 			}
 		}
 	}
 	
-	void UpdateEvilIA() {
+	/*void UpdateEvilIA() {
 		for(int i=0; i<evilias.size(); i++) {
 			EvilIA e=evilias.get(i);
-			e.Update(playerMissiles, this, eviliaMissiles);
+			e.Update(player1.GetPlayer1Missiles(), player1, eviliaMissiles);
 			if(e.isDead()) {
 				evilias.remove(i);
 			}
 		}
+	}*/
+	
+	void UpdatePlayerMPsPosition() {		//Only position
+		for(int i=0; i<players.size(); i++) {
+			PlayerMP p=players.get(i);
+			p.UpdatePlayerPosition();
+		}
+	}
+	
+	void UpdatePlayerMPsMissiles() {
+		for(int i=0; i<players.size(); i++) {
+			PlayerMP p=players.get(i);
+			p.UpdatePlayerMissiles();
+		}
+	}
+	
+	public void AddPlayerMP(PlayerMP player) {
+		players.add(player);
 	}
 	
 	void Update() {
-		UpdatePlayerPosition();
-		UpdatePlayerMissiles();
-		UpdateEvilIA();
-		UpdateEvilIAMissiles();
+		UpdatePlayerMPsPosition();
+		UpdatePlayerMPsMissiles();
+		//UpdateEvilIA();
+		//UpdateEvilIAMissiles();
 		UpdateRectangles();
 	}
 	
-	void DrawPlayer(Graphics bbg) {
-		bbg.setColor(Color.BLUE);
-		bbg.fillRect(x, y, PLAYER_WIDTH, PLAYER_HEIGHT);
-	}
-	
 	void DrawMissiles(Graphics bbg) {
-		//Draw Player 1 missiles
-		for(int i=0; i<playerMissiles.size(); i++) {
-			Missile m=playerMissiles.get(i);
-			m.Draw(bbg);
+		//Draw Player missiles
+		for(int i=0; i<players.size(); i++) {
+			PlayerMP p=players.get(i);
+			List<Missile> missiles=p.GetMissiles();
+			for(int j=0; j<missiles.size(); j++) {
+				Missile m=missiles.get(j);
+				m.Draw(bbg);
+			}
 		}
 		//Draw evilIA missiles
 		for(int i=0; i<eviliaMissiles.size(); i++) {
@@ -220,24 +190,27 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	void DrawPlayerMPs(Graphics bbg) {
+		for(int i=0; i<players.size(); i++) {
+			PlayerMP p=players.get(i);
+			p.Draw(bbg);
+		}
+	}
+	
 	void Draw() {
 		Graphics g=getGraphics();
 		Graphics bbg=backBuffer.getGraphics();
 		
 		bbg.setColor(Color.WHITE);
 		bbg.fillRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-		
-		DrawPlayer(bbg);	//Player 1
+
 		DrawMissiles(bbg);
-		DrawEvilIAs(bbg);
+		DrawPlayerMPs(bbg);		//Jugadores online
+		//DrawEvilIAs(bbg);
 		DrawRectangles(bbg);
 		
 		g.drawImage(backBuffer, insets.left, insets.top, this);
 	}
-	
-	public int getX() {return x;}
-	
-	public int getY() {return y;}
 	
 	public static void main(String[] args) {
 		MainClass game=new MainClass();
