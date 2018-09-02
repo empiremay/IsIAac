@@ -24,14 +24,15 @@ public class MainClass extends JFrame {
 	BufferedImage backBuffer;
 	Insets insets;
 	public InputHandler input;
+	public WindowHandler windowHandler;
 	
 	List<PlayerMP> players=new ArrayList<PlayerMP>();		//MP Players, including player1
 	List<Missile> eviliaMissiles=new ArrayList<Missile>();
 	List<Rectangle> rectangles=new ArrayList<Rectangle>();
 	List<EvilIA> evilias=new ArrayList<EvilIA>();
 	
-	private GameClient socketClient;
-	private GameServer socketServer;
+	public GameClient socketClient;
+	public GameServer socketServer;
 	
 	public void run() {
 		Initialize();
@@ -61,6 +62,7 @@ public class MainClass extends JFrame {
 		setSize(insets.left+WINDOW_WIDTH+insets.right, insets.top+WINDOW_HEIGHT+insets.bottom);
 		backBuffer=new BufferedImage(WINDOW_WIDTH, WINDOW_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		input=new InputHandler(this);
+		windowHandler=new WindowHandler(this);
 		
 		
 		//Initialize net things
@@ -74,10 +76,14 @@ public class MainClass extends JFrame {
 		}*/
 		socketClient=new GameClient(this, "localhost");
 		socketClient.start();
-		socketClient.sendData("ping".getBytes());
-		
 		String username=JOptionPane.showInputDialog(this, "Your username:");
-		Packet00Login loginPacket=new Packet00Login(username);
+		PlayerMP player=new PlayerMP(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, input, username, null, -1);
+		players.add(player);
+		Packet00Login loginPacket=new Packet00Login(player.getUsername());
+		if(socketServer!=null) {
+			socketServer.addConnection((PlayerMP)player, loginPacket);
+		}
+		//socketClient.sendData("ping".getBytes());
 		loginPacket.writeData(socketClient);
 		
 		InitializeRectangles();
@@ -149,6 +155,16 @@ public class MainClass extends JFrame {
 	
 	public void AddPlayerMP(PlayerMP player) {
 		players.add(player);
+	}
+	
+	public void RemovePlayerMP(String username) {
+		int index=0;
+		for(int i=0; i<players.size(); i++) {
+			if(username.equals(players.get(i).getUsername())) {
+				index=i;
+			}
+		}
+		players.remove(index);
 	}
 	
 	void Update() {
