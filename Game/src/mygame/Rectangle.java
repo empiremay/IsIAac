@@ -50,4 +50,24 @@ public class Rectangle {
 	public boolean isDead() {
 		return life<=0;
 	}
+	
+	public int getX() {
+		return x;
+	}
+	
+	public int getY() {
+		return y;
+	}
+	
+	public int getXSize() {
+		return xSize;
+	}
+	
+	public int getYSize() {
+		return ySize;
+	}
+	
+	public double getLife() {
+		return life;
+	}
 }

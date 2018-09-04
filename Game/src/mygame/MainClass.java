@@ -18,6 +18,7 @@ public class MainClass extends JFrame {
 	private static final long serialVersionUID = 1L;
 	public static final int WINDOW_WIDTH=500;
 	public static final int WINDOW_HEIGHT=500;
+	public static MainClass game;
 	static Random rnd=new Random();
 	boolean isRunning=true;
 	int fps=60;
@@ -52,6 +53,7 @@ public class MainClass extends JFrame {
 	
 	void Initialize() {
 		//Initialize first game things
+		game=this;
 		setTitle("Game");
 		setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 		setResizable(false);
@@ -67,33 +69,39 @@ public class MainClass extends JFrame {
 		
 		//Initialize net things
 		//String ip_publica="84.125.220.44";
+		boolean isServer=false;
 		if(JOptionPane.showConfirmDialog(this, "Do you want to run the server?")==0) {
+			isServer=true;
 			socketServer=new GameServer(this);
 			socketServer.start();
 		}
 		/*else {
 			ip_publica=JOptionPane.showInputDialog("Pon tu ip publica aqui");
 		}*/
-		socketClient=new GameClient(this, "localhost");
+		socketClient=new GameClient(this, "localhost", isServer);
 		socketClient.start();
+		
 		String username=JOptionPane.showInputDialog(this, "Your username:");
-		PlayerMP player=new PlayerMP(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, input, username, null, -1);
+		
+		String[] missileColors= {"RED", "CYAN"};
+		String missileColor=(String)JOptionPane.showInputDialog(null, "Choose projectile color:", "Elegir", JOptionPane.QUESTION_MESSAGE, null, missileColors, missileColors[0]);
+		
+		PlayerMP player=new PlayerMP(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, input, username, missileColor, null, -1);
 		players.add(player);
-		Packet00Login loginPacket=new Packet00Login(player.getUsername());
+		
+		Packet00Login loginPacket=new Packet00Login(player.getUsername(), player.getMissileColor());
 		if(socketServer!=null) {
 			socketServer.addConnection((PlayerMP)player, loginPacket);
 		}
 		//socketClient.sendData("ping".getBytes());
 		loginPacket.writeData(socketClient);
 		
-		InitializeRectangles();
+		//InitializeRectangles();
 		//InitializeEvilIA();
 	}
-	
-	void InitializeRectangles() {
-		int ancho=rnd.nextInt(40)+20;
-		int alto=rnd.nextInt(40)+20;
-		rectangles.add(new Rectangle(rnd.nextInt(WINDOW_WIDTH-ancho), rnd.nextInt(WINDOW_HEIGHT-ancho), ancho, alto, 100));
+
+	public void initializeRectangles(int x, int y, int xSize, int ySize, double life) {
+		rectangles.add(new Rectangle(x, y, xSize, ySize, life));
 	}
 	
 	void InitializeEvilIA() {
@@ -139,18 +147,12 @@ public class MainClass extends JFrame {
 		}
 	}*/
 	
-	void UpdatePlayerMPsPosition() {		//Only position
-		for(int i=0; i<players.size(); i++) {
-			PlayerMP p=players.get(i);
-			p.UpdatePlayerPosition();
-		}
+	void UpdatePlayerPosition() {		//Only position
+		players.get(0).UpdatePlayerPosition();
 	}
 	
-	void UpdatePlayerMPsMissiles() {
-		for(int i=0; i<players.size(); i++) {
-			PlayerMP p=players.get(i);
-			p.UpdatePlayerMissiles();
-		}
+	void UpdatePlayerMissiles() {
+		players.get(0).UpdatePlayerMissiles();
 	}
 	
 	public void AddPlayerMP(PlayerMP player) {
@@ -167,12 +169,44 @@ public class MainClass extends JFrame {
 		players.remove(index);
 	}
 	
+	private int getPlayerMPindex(String username) {
+		int index=0;
+		for(int i=0; i<players.size(); i++) {
+			if(username.equals(players.get(i).getUsername())) {
+				break;
+			}
+			index++;
+		}
+		return index;
+	}
+	
+	public void updatePlayerPosition(String username, int x, int y) {	//Updates "username" player position
+		int index=getPlayerMPindex(username);
+		players.get(index).x=x;
+		players.get(index).y=y;
+	}
+	
+	public void shootMissile(String username, int x, int y, double size, int direction, Color color, int avance, double missileReduction) {
+		int index=getPlayerMPindex(username);
+		Missile m=new Missile(x, y, (int)size, direction, color, avance, missileReduction);
+		players.get(index).AddMissile(m);
+	}
+	
+	public void updateMissile(String username, Missile m) {
+		int index=getPlayerMPindex(username);
+		int missileIndex=players.get(index).getMissileIndex(m);
+		players.get(index).missiles.get(missileIndex).Update();
+		if(players.get(index).missiles.get(missileIndex).isDead()) {
+			players.get(index).missiles.remove(missileIndex);
+		}
+	}
+	
 	void Update() {
-		UpdatePlayerMPsPosition();
-		UpdatePlayerMPsMissiles();
+		UpdatePlayerPosition();
+		UpdatePlayerMissiles();
 		//UpdateEvilIA();
 		//UpdateEvilIAMissiles();
-		UpdateRectangles();
+		//UpdateRectangles();
 	}
 	
 	void DrawMissiles(Graphics bbg) {

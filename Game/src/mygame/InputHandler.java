@@ -6,8 +6,8 @@ public class InputHandler implements KeyListener {
 	
 	boolean[] keys;
 	
-	public InputHandler(Component object) {
-		object.addKeyListener(this);
+	public InputHandler(MainClass game) {
+		game.addKeyListener(this);
 		keys=new boolean[256];
 	}
 	

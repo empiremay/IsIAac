@@ -99,7 +99,7 @@ public class EvilIA {
 	}
 	
 	void MoveAwayFromPlayer(Player player) {
-		if(Math.sqrt(Math.pow(x-player.getX(), 2) + Math.pow(y-player.getY(), 2))<=distanceFromPlayer) {
+		if(Math.sqrt(Math.pow(x-player.x, 2) + Math.pow(y-player.y, 2))<=distanceFromPlayer) {
 			MoveUp();
 		}
 	}
@@ -143,8 +143,8 @@ public class EvilIA {
 		}
 		UpdateMovement(playerMissiles, player);
 		//Disparar en función de donde esté Player 1
-		if((x+missileSize)>player.getX() && (x-missileSize)<player.getX()) {	//Disparar arriba o abajo
-			if(y>player.getY()) {	//Disparar arriba
+		if((x+missileSize)>player.x && (x-missileSize)<player.x) {	//Disparar arriba o abajo
+			if(y>player.y) {	//Disparar arriba
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
 					eviliaMissiles.add(new Missile(x+WIDTH/2, y-missileSeparation-missileSize/2, missileSize, 0, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();
@@ -157,8 +157,8 @@ public class EvilIA {
 				}
 			}
 		}
-		if((y+missileSize)>player.getY() && (y-missileSize)<player.getY()) {	//Disparar izquierda o derecha
-			if(x>player.getX()) {	//Disparar izquierda
+		if((y+missileSize)>player.y && (y-missileSize)<player.y) {	//Disparar izquierda o derecha
+			if(x>player.x) {	//Disparar izquierda
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
 					eviliaMissiles.add(new Missile(x-missileSeparation-missileSize/2, y+HEIGHT/2, missileSize, 2, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();

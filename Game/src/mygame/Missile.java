@@ -67,4 +67,23 @@ public class Missile {
 	public int getY() {return y;}
 	
 	public int getDir() {return direction;}
+	
+	public String getColor() {
+		String c="BLACK";
+		if(color==Color.RED) {
+			c="RED";
+		}
+		if(color==Color.CYAN) {
+			c="CYAN";
+		}
+		return c;
+	}
+	
+	public int getAvance() {
+		return avance;
+	}
+	
+	public double getMissileReduction() {
+		return missileReduction;
+	}
 }
