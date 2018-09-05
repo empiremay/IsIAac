@@ -24,8 +24,8 @@ public class Player {
 	int missileSize=PLAYER_WIDTH/2+1;
 	int missileSeparation=2;
 	String missileColor="RED";
-	int avanceMisil=1;		//5
-	double missileReduction=0.125/5;	//0.125;
+	int avanceMisil=5;		//5
+	double missileReduction=0.125;	//0.125;
 	
 	public List<Missile> missiles=new ArrayList<Missile>();
 	
@@ -121,16 +121,9 @@ public class Player {
 		
 		for(int i=0; i<missiles.size(); i++) {
 			Missile m=missiles.get(i);
-			Packet04UpdateMissile packet=new Packet04UpdateMissile(username, m);
+			Packet04UpdateMissile packet=new Packet04UpdateMissile(username, m, i);
 			packet.writeData(MainClass.game.socketClient);
 		}
-		/*for(int i=0; i<missiles.size(); i++) {
-			Missile m=missiles.get(i);
-			m.Update();
-			if(m.isDead()) {
-				missiles.remove(i);
-			}
-		}*/
 	}
 	
 	void Draw(Graphics bbg) {
@@ -165,16 +158,5 @@ public class Player {
 	
 	public void AddMissile(Missile m) {
 		missiles.add(m);
-	}
-	
-	public int getMissileIndex(Missile m) {
-		int index=0;
-		for(int i=0; i<missiles.size(); i++) {
-			if(m==missiles.get(i)) {
-				index=i;
-				break;
-			}
-		}
-		return index;
 	}
 }

@@ -192,9 +192,9 @@ public class MainClass extends JFrame {
 		players.get(index).AddMissile(m);
 	}
 	
-	public void updateMissile(String username, Missile m) {
+	public void updateMissile(String username, Missile m, int missileIndex) {
 		int index=getPlayerMPindex(username);
-		int missileIndex=players.get(index).getMissileIndex(m);
+		if(players.get(index).missiles.size()<=missileIndex) {return;}
 		players.get(index).missiles.get(missileIndex).Update();
 		if(players.get(index).missiles.get(missileIndex).isDead()) {
 			players.get(index).missiles.remove(missileIndex);

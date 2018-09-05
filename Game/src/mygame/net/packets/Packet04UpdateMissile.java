@@ -16,6 +16,7 @@ public class Packet04UpdateMissile extends Packet {
 	String missileColor;
 	int avance;
 	double missileReduction;
+	int index;
 	
 	public Packet04UpdateMissile(byte[] data) {
 		super(04);
@@ -28,9 +29,10 @@ public class Packet04UpdateMissile extends Packet {
 		this.missileColor=dataArray[5];
 		this.avance=Integer.parseInt(dataArray[6]);
 		this.missileReduction=Double.parseDouble(dataArray[7]);
+		this.index=Integer.parseInt(dataArray[8]);
 	}
 	
-	public Packet04UpdateMissile(String username, Missile m) {
+	public Packet04UpdateMissile(String username, Missile m, int index) {
 		super(04);
 		this.username=username;
 		this.m=m;
@@ -41,6 +43,7 @@ public class Packet04UpdateMissile extends Packet {
 		this.missileColor=m.getColor();
 		this.avance=m.getAvance();
 		this.missileReduction=m.getMissileReduction();
+		this.index=index;
 	}
 	
 	public void writeData(GameClient client) {
@@ -52,7 +55,7 @@ public class Packet04UpdateMissile extends Packet {
 	}
 	
 	public byte[] getData() {
-		return ("04"+this.username+","+this.x+","+this.y+","+this.size+","+this.direction+","+this.missileColor+","+this.avance+","+this.missileReduction).getBytes();
+		return ("04"+this.username+","+this.x+","+this.y+","+this.size+","+this.direction+","+this.missileColor+","+this.avance+","+this.missileReduction+","+this.index).getBytes();
 	}
 	
 	public String getUsername() {
@@ -61,5 +64,9 @@ public class Packet04UpdateMissile extends Packet {
 	
 	public Missile getMissile() {
 		return m;
+	}
+	
+	public int getIndex() {
+		return index;
 	}
 }

@@ -109,7 +109,7 @@ public class GameClient extends Thread {
 	}
 	
 	private void handleUpdateMissile(Packet04UpdateMissile packet) {
-		this.game.updateMissile(packet.getUsername(), packet.getMissile());
+		this.game.updateMissile(packet.getUsername(), packet.getMissile(), packet.getIndex());
 	}
 	
 	private void handleInitializeRectangles(Packet05InitializeRectangles packet) {

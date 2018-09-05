@@ -36,8 +36,21 @@ public class GameServer extends Thread {
 		int ancho=rnd.nextInt(40)+20;
 		int alto=rnd.nextInt(40)+20;
 		rectangle=new Rectangle(rnd.nextInt(MainClass.WINDOW_WIDTH-ancho), rnd.nextInt(MainClass.WINDOW_HEIGHT-ancho), ancho, alto, 100);
-		//Packet05InitializeRectangles packet=new Packet05InitializeRectangles(rnd.nextInt(MainClass.WINDOW_WIDTH-ancho), rnd.nextInt(MainClass.WINDOW_HEIGHT-ancho), ancho, alto, 100);
-		//this.handleInitializeRectangles(packet);
+	}
+	
+	private void UpdateMissiles() {
+		for(int i=0; i<connectedPlayers.size(); i++) {
+			PlayerMP player=connectedPlayers.get(i);
+			List<Missile> missiles=player.GetMissiles();
+			for(int j=0; j<missiles.size(); j++) {
+				connectedPlayers.get(i).missiles.get(j).Update();
+				if(connectedPlayers.get(i).missiles.get(j).isDead()) {
+					connectedPlayers.get(i).missiles.remove(j);
+				}
+				//Packet packet=new Packet04UpdateMissile(player.getUsername(), missiles.get(j));
+				//this.handleUpdateMissile((Packet04UpdateMissile)packet);
+			}
+		}
 	}
 	
 	public void run() {
@@ -50,6 +63,7 @@ public class GameServer extends Thread {
 				e.printStackTrace();
 			}
 			this.parsePacket(packet.getData(), packet.getAddress(), packet.getPort());
+			//UpdateMissiles();
 			/*String message=new String(packet.getData());
 			System.out.println("CLIENT ["+packet.getAddress().getHostAddress()+":"+packet.getPort()+"] > "+message);
 			if(message.trim().equalsIgnoreCase("ping")) {
