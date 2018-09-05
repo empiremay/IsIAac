@@ -29,7 +29,8 @@ public class Packet02Move extends Packet {
 	}
 
 	public void writeData(GameServer server) {
-		server.sendDataToAllClients(getData());
+		//server.sendDataToAllClients(getData());
+		server.sendDataToAllClientsExceptUsername(getData(), username);
 	}
 
 	public byte[] getData() {

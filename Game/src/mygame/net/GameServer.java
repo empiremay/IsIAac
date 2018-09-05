@@ -173,6 +173,17 @@ public class GameServer extends Thread {
 		}
 	}
 	
+	public void sendDataToAllClientsExceptUsername(byte[] data, String username) {
+		for(PlayerMP p: connectedPlayers) {
+			if(p.getUsername().equals(username)) {
+				//Nothing
+			}
+			else {
+				sendData(data, p.ipAddress, p.port);
+			}
+		}
+	}
+	
 	private void handleMove(Packet02Move packet) {
 		if(getPlayerMP(packet.getUsername())!=null) {
 			//int index=getPlayerMPindex(packet.getUsername());

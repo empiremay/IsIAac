@@ -68,17 +68,12 @@ public class MainClass extends JFrame {
 		
 		
 		//Initialize net things
-		//String ip_publica="84.125.220.44";
-		boolean isServer=false;
+		String ip_publica="localhost";//"84.125.220.44";
 		if(JOptionPane.showConfirmDialog(this, "Do you want to run the server?")==0) {
-			isServer=true;
 			socketServer=new GameServer(this);
 			socketServer.start();
 		}
-		/*else {
-			ip_publica=JOptionPane.showInputDialog("Pon tu ip publica aqui");
-		}*/
-		socketClient=new GameClient(this, "localhost", isServer);
+		socketClient=new GameClient(this, ip_publica);
 		socketClient.start();
 		
 		String username=JOptionPane.showInputDialog(this, "Your username:");

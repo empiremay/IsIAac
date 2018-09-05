@@ -22,11 +22,9 @@ public class GameClient extends Thread {
 	private InetAddress ipAddress;
 	private DatagramSocket socket;
 	private MainClass game;
-	boolean isServer;	//True if this client is also server
 	
-	public GameClient(MainClass game, String ipAddress, boolean isServer) {
+	public GameClient(MainClass game, String ipAddress) {
 		this.game=game;
-		this.isServer=isServer;
 		try {
 			this.socket=new DatagramSocket();
 			this.ipAddress=InetAddress.getByName(ipAddress);
