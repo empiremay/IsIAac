@@ -15,6 +15,9 @@ import mygame.net.packets.Packet02Move;
 import mygame.net.packets.Packet03ShootMissile;
 import mygame.net.packets.Packet04UpdateMissile;
 import mygame.net.packets.Packet05InitializeRectangles;
+import mygame.net.packets.Packet06PlayerCollision;
+import mygame.net.packets.Packet07SendLifeBar;
+import mygame.net.packets.Packet10QuitLifeBar;
 import mygame.net.packets.Packet.PacketTypes;
 
 public class GameClient extends Thread {
@@ -86,11 +89,23 @@ public class GameClient extends Thread {
 				packet=new Packet05InitializeRectangles(data);
 				handleInitializeRectangles((Packet05InitializeRectangles)packet);
 				break;
+			case PLAYERCOLLISION:
+				packet=new Packet06PlayerCollision(data);
+				handlePlayerCollision((Packet06PlayerCollision)packet);
+				break;
+			case SENDLIFEBAR:
+				packet=new Packet07SendLifeBar(data);
+				handleSendLifeBar((Packet07SendLifeBar)packet);
+				break;
+			case QUITLIFEBAR:
+				packet=new Packet10QuitLifeBar(data);
+				handleQuitLifeBar((Packet10QuitLifeBar)packet);
+				break;
 		}
 	}
 	
 	public void sendData(byte[] data) {
-		DatagramPacket packet=new DatagramPacket(data, data.length, ipAddress, 25565);
+		DatagramPacket packet=new DatagramPacket(data, data.length, ipAddress, /*1641*/25565);
 		try {
 			socket.send(packet);
 		} catch (IOException e) {
@@ -112,5 +127,17 @@ public class GameClient extends Thread {
 	
 	private void handleInitializeRectangles(Packet05InitializeRectangles packet) {
 		this.game.initializeRectangles(packet.getX(), packet.getY(), packet.getXSize(), packet.getYSize(), packet.getLife());
+	}
+	
+	private void handlePlayerCollision(Packet06PlayerCollision packet) {
+		this.game.playerCollision(packet.getUsername(), packet.getLife(), packet.getMissileIndex());
+	}
+	
+	private void handleSendLifeBar(Packet07SendLifeBar packet) {
+		this.game.sendLifeBar(packet.getUsername(), packet.getLife());
+	}
+	
+	private void handleQuitLifeBar(Packet10QuitLifeBar packet) {
+		this.game.quitLifeBar(packet.getUsername());
 	}
 }

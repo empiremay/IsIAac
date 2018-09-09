@@ -26,6 +26,7 @@ public class MainClass extends JFrame {
 	Insets insets;
 	public InputHandler input;
 	public WindowHandler windowHandler;
+	Map<String, Integer> playersHP=new HashMap<String, Integer>();
 	
 	List<PlayerMP> players=new ArrayList<PlayerMP>();		//MP Players, including player1
 	List<Missile> eviliaMissiles=new ArrayList<Missile>();
@@ -68,7 +69,7 @@ public class MainClass extends JFrame {
 		
 		
 		//Initialize net things
-		String ip_publica="localhost";//"84.125.220.44";
+		String ip_publica="localhost";//"90.168.229.154";
 		if(JOptionPane.showConfirmDialog(this, "Do you want to run the server?")==0) {
 			socketServer=new GameServer(this);
 			socketServer.start();
@@ -150,6 +151,10 @@ public class MainClass extends JFrame {
 		players.get(0).UpdatePlayerMissiles();
 	}
 	
+	void UpdatePlayerCollisions() {
+		players.get(0).UpdatePlayerCollisions(players);
+	}
+	
 	public void AddPlayerMP(PlayerMP player) {
 		players.add(player);
 	}
@@ -183,7 +188,7 @@ public class MainClass extends JFrame {
 	
 	public void shootMissile(String username, int x, int y, double size, int direction, Color color, int avance, double missileReduction) {
 		int index=getPlayerMPindex(username);
-		Missile m=new Missile(x, y, (int)size, direction, color, avance, missileReduction);
+		Missile m=new Missile(username, x, y, (int)size, direction, color, avance, missileReduction);
 		players.get(index).AddMissile(m);
 	}
 	
@@ -196,9 +201,24 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	public void playerCollision(String username, int life, int missileIndex) {
+		int index=getPlayerMPindex(username);
+		//players.get(index).setLife(life);
+		players.get(index).missiles.remove(missileIndex);	//CORREGIR
+	}
+	
+	public void sendLifeBar(String username, int life) {
+		playersHP.put(username, life);
+	}
+	
+	public void quitLifeBar(String username) {
+		playersHP.remove(username);
+	}
+	
 	void Update() {
 		UpdatePlayerPosition();
 		UpdatePlayerMissiles();
+		UpdatePlayerCollisions();
 		//UpdateEvilIA();
 		//UpdateEvilIAMissiles();
 		//UpdateRectangles();
@@ -214,11 +234,12 @@ public class MainClass extends JFrame {
 				m.Draw(bbg);
 			}
 		}
+		
 		//Draw evilIA missiles
-		for(int i=0; i<eviliaMissiles.size(); i++) {
+		/*for(int i=0; i<eviliaMissiles.size(); i++) {
 			Missile m=eviliaMissiles.get(i);
 			m.Draw(bbg);
-		}
+		}*/
 	}
 	
 	void DrawRectangles(Graphics bbg) {
@@ -242,6 +263,50 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	void DrawPlayerLife(Graphics bbg) {
+		players.get(0).DrawLifeBar(bbg);
+	}
+	
+	void DrawPlayerMPsLife(Graphics bbg) {
+		int yOffset=0;
+		for(Map.Entry<String, Integer> entry: playersHP.entrySet()) {
+			DrawPlayerMPLife(entry.getKey(), entry.getValue(), bbg, yOffset);
+			yOffset+=50;
+		}
+	}
+	
+	void DrawPlayerMPLife(String username, int life, Graphics bbg, int yOffset) {
+		Graphics2D bbg2=(Graphics2D)bbg;
+		int lineThickness=2;
+		bbg2.setStroke(new BasicStroke(lineThickness));
+		int x_separation=30;
+		int y_separation=30+yOffset;
+		int bar_width=75;
+		int bar_height=15;
+		
+		int currentLife=life;
+		if(life<0) {
+			currentLife=0;
+		}
+		currentLife*=(double)bar_width/100;
+		
+		//Nombre
+		bbg2.setColor(Color.BLACK);
+		bbg2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		bbg2.drawString(username.toUpperCase(), x_separation, y_separation);
+		
+		y_separation+=5;
+		//Vida
+		bbg2.setColor(Color.GREEN);
+		bbg2.fillRect(x_separation, y_separation, currentLife, bar_height);
+		bbg2.setColor(Color.BLACK);
+		//bbg2.fillRect(x_separation+currentLife, y_separation, bar_width-currentLife, bar_height);
+		
+		//Marco exterior
+		bbg2.setColor(Color.DARK_GRAY);
+		bbg2.drawRect(x_separation, y_separation, bar_width, bar_height);
+	}
+	
 	void Draw() {
 		Graphics g=getGraphics();
 		Graphics bbg=backBuffer.getGraphics();
@@ -253,6 +318,9 @@ public class MainClass extends JFrame {
 		DrawPlayerMPs(bbg);		//Jugadores online
 		//DrawEvilIAs(bbg);
 		DrawRectangles(bbg);
+		//Latest thing to draw is life:
+		DrawPlayerLife(bbg);
+		DrawPlayerMPsLife(bbg);
 		
 		g.drawImage(backBuffer, insets.left, insets.top, this);
 	}
