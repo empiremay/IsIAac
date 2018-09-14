@@ -31,15 +31,21 @@ public class Player {
 	String missileColor="RED";
 	int avanceMisil=5;		//5
 	double missileReduction=0.125*2;	//0.125;
-	int life;
-	int damagedLife;	//Vida en rojo al dañarse y en amarillo al dañarse mucho
+	int life=0;
+	int damagedLife=0;	//Vida en rojo al dañarse y en amarillo al dañarse mucho
+	int regenLife;
 	String damagedLifeColor="RED";
-	String color;
+	String color="BLUE";
 	int redDuration=10;
 	int currentRedDuration=redDuration;
+	
 	int damagedLifeDuration=20;
 	int currentDamagedLifeDuration=damagedLifeDuration;
 	boolean damagedLifeDecreasing=false;
+	
+	int regenLifeDuration=20;
+	int currentRegenLifeDuration=regenLifeDuration;
+	boolean regenLifeDecreasing=false;
 	
 	public List<Missile> missiles=new ArrayList<Missile>();
 	
@@ -53,8 +59,6 @@ public class Player {
 		this.username=username;
 		this.missileColor=missileColor;
 		this.life=MAX_LIFE;
-		this.damagedLife=0;
-		this.color="BLUE";
 	}
 	
 	void UpdatePlayerPosition() {
@@ -74,17 +78,31 @@ public class Player {
 		if(damagedLife>0) {
 			--currentDamagedLifeDuration;
 			if(currentDamagedLifeDuration==0) {
-				//damagedLife=0;
 				//Start decreasing damagedLife
 				damagedLifeDecreasing=true;
 				currentDamagedLifeDuration=damagedLifeDuration;
 			}
 		}
 		if(damagedLifeDecreasing) {
-			damagedLife--;
+			--damagedLife;
 			if(damagedLife<=0) {
 				damagedLifeDecreasing=false;
 				damagedLifeColor="RED";
+			}
+		}
+		//Update regenLife
+		if(regenLife>0) {
+			--currentRegenLifeDuration;
+			if(currentRegenLifeDuration==0) {
+				//Start decreasing regenLife
+				regenLifeDecreasing=true;
+				currentRegenLifeDuration=regenLifeDuration;
+			}
+		}
+		if(regenLifeDecreasing) {
+			--regenLife;
+			if(regenLife<=0) {
+				regenLifeDecreasing=false;
 			}
 		}
 		
@@ -203,7 +221,13 @@ public class Player {
 				for(int i=0; i<playerMissiles.size(); i++) {
 					Missile m=playerMissiles.get(i);
 					if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+PLAYER_HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+PLAYER_WIDTH))) {	//Hay colisión
-						UpdateHP((int)(life-m.getSize()));
+						int random=rnd.nextInt(2);
+						if(random==0) {
+							UpdateHP((int)(life-m.getSize()));
+						}
+						else {
+							UpdateHP((int)(life+m.getSize()));
+						}
 						playerMissiles.remove(i);
 						Enrojecer();
 						//Mandar paquete al server
@@ -216,22 +240,43 @@ public class Player {
 	}
 	
 	void UpdateHP(int life) {
-		int impact=this.life-life;
-		if(life<=0) {
+		int damage=this.life-life;
+		int regen=life-this.life;
+		if(life<0) {
 			this.life=0;
 		}
 		else {
-			if(life<this.life) {
-				//La vida baja
-				this.damagedLife+=impact;
-				//Si la relación de daño es mayor del x%, damagedLife será amarilla
-				int percentage=33;
-				if(impact>(percentage*MAX_LIFE/100)) {
-					damagedLifeColor="YELLOW";
+			if(life>MAX_LIFE) {
+				this.life=MAX_LIFE;
+			}
+			else {
+				this.life=life;
+				//Mi vida baja
+				if(damage>0) {
+					this.damagedLife+=damage;
+					//Si la relación de daño es mayor del x%, damagedLife será amarilla
+					int percentage=33;
+					if(damage>(percentage*MAX_LIFE/100)) {
+						damagedLifeColor="YELLOW";
+					}
+				}
+				//Mi vida sube
+				if(regen>0) {
+					this.damagedLife-=regen;
+					if(this.damagedLife<0) {
+						this.damagedLife=0;
+					}
+					this.regenLife+=regen;
 				}
 			}
 		}
-		this.life=life;
+		//Comprobación final
+		if(this.life+this.damagedLife>MAX_LIFE) {
+			this.damagedLife=MAX_LIFE-this.life;
+		}
+		if(regenLife>this.life) {
+			regenLife=0;
+		}
 	}
 	
 	void Enrojecer() {
@@ -270,8 +315,11 @@ public class Player {
 		}
 		
 		//Life
-		bbg2.setColor(Color.GREEN);
-		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-bar_width, y_separation, currentLife, bar_height);
+		bbg2.setColor(new Color(34, 230, 22));
+		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-bar_width, y_separation, currentLife-regenLife, bar_height);
+		//Regen Life
+		bbg2.setColor(new Color(226, 254, 255));
+		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-bar_width+(currentLife-regenLife), y_separation, regenLife, bar_height);
 		//Damaged Life
 		switch(damagedLifeColor) {
 			default:
@@ -311,10 +359,6 @@ public class Player {
 	public void AddMissile(Missile m) {
 		missiles.add(m);
 	}
-	
-	/*public void setLife(int value) {
-		this.life=value;
-	}*/
 	
 	public int getLife() {
 		return this.life;
