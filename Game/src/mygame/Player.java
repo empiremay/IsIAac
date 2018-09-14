@@ -22,18 +22,24 @@ public class Player {
 	
 	static final int PLAYER_WIDTH=20;
 	static final int PLAYER_HEIGHT=20;
+	static final int MAX_LIFE=100;
 	static Random rnd=new Random();
 	long tiempoUltimoMisil=0;
 	long tiempoEntreMisiles=200;	//200
-	int missileSize=PLAYER_WIDTH/2+1;
+	int missileSize=50;//PLAYER_WIDTH/2+1;
 	int missileSeparation=2;
 	String missileColor="RED";
 	int avanceMisil=5;		//5
-	double missileReduction=0.125/10;	//0.125;
+	double missileReduction=0.125*2;	//0.125;
 	int life;
+	int damagedLife;	//Vida en rojo al dañarse y en amarillo al dañarse mucho
+	String damagedLifeColor="RED";
 	String color;
 	int redDuration=10;
-	int currentDuration=redDuration;
+	int currentRedDuration=redDuration;
+	int damagedLifeDuration=20;
+	int currentDamagedLifeDuration=damagedLifeDuration;
+	boolean damagedLifeDecreasing=false;
 	
 	public List<Missile> missiles=new ArrayList<Missile>();
 	
@@ -46,7 +52,8 @@ public class Player {
 		this.input=input;
 		this.username=username;
 		this.missileColor=missileColor;
-		this.life=100;
+		this.life=MAX_LIFE;
+		this.damagedLife=0;
 		this.color="BLUE";
 	}
 	
@@ -57,10 +64,27 @@ public class Player {
 		
 		//Update color
 		if(this.color=="RED") {	//El color ROJO aparecerá durante 3 fotogramas
-			--currentDuration;
-			if(currentDuration==0) {
+			--currentRedDuration;
+			if(currentRedDuration==0) {
 				this.color="BLUE";
-				currentDuration=redDuration;
+				currentRedDuration=redDuration;
+			}
+		}
+		//Update damagedLife
+		if(damagedLife>0) {
+			--currentDamagedLifeDuration;
+			if(currentDamagedLifeDuration==0) {
+				//damagedLife=0;
+				//Start decreasing damagedLife
+				damagedLifeDecreasing=true;
+				currentDamagedLifeDuration=damagedLifeDuration;
+			}
+		}
+		if(damagedLifeDecreasing) {
+			damagedLife--;
+			if(damagedLife<=0) {
+				damagedLifeDecreasing=false;
+				damagedLifeColor="RED";
 			}
 		}
 		
@@ -173,13 +197,13 @@ public class Player {
 	
 	void UpdatePlayerCollisions(List<PlayerMP> players) {
 		//Missile collisions
-		/*for(int j=0; j<players.size(); j++) {
-			if(players.get(j).getUsername().equals(username)==false) {
+		for(int j=0; j<players.size(); j++) {
+			//if(players.get(j).getUsername().equals(username)==false) {
 				List<Missile> playerMissiles=players.get(j).GetMissiles();
 				for(int i=0; i<playerMissiles.size(); i++) {
 					Missile m=playerMissiles.get(i);
 					if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+PLAYER_HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+PLAYER_WIDTH))) {	//Hay colisión
-						life-=m.getSize();
+						UpdateHP((int)(life-m.getSize()));
 						playerMissiles.remove(i);
 						Enrojecer();
 						//Mandar paquete al server
@@ -187,8 +211,27 @@ public class Player {
 						//packet.writeData(MainClass.game.socketClient);
 					}
 				}
+			//}
+		}
+	}
+	
+	void UpdateHP(int life) {
+		int impact=this.life-life;
+		if(life<=0) {
+			this.life=0;
+		}
+		else {
+			if(life<this.life) {
+				//La vida baja
+				this.damagedLife+=impact;
+				//Si la relación de daño es mayor del x%, damagedLife será amarilla
+				int percentage=33;
+				if(impact>(percentage*MAX_LIFE/100)) {
+					damagedLifeColor="YELLOW";
+				}
 			}
-		}*/
+		}
+		this.life=life;
 	}
 	
 	void Enrojecer() {
@@ -226,11 +269,19 @@ public class Player {
 			currentLife=0;
 		}
 		
-		//Vida
+		//Life
 		bbg2.setColor(Color.GREEN);
 		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-bar_width, y_separation, currentLife, bar_height);
+		//Damaged Life
+		switch(damagedLifeColor) {
+			default:
+			case "RED": bbg2.setColor(new Color(255, 6, 28)); break;
+			case "YELLOW": bbg2.setColor(new Color(255, 104, 0)); break;
+		}
+		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-currentLife), y_separation, damagedLife, bar_height);
+		//No Life
 		bbg2.setColor(Color.BLACK);
-		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-currentLife), y_separation, bar_width-currentLife, bar_height);
+		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-(currentLife+damagedLife)), y_separation, bar_width-(currentLife+damagedLife), bar_height);
 		
 		//Marco exterior
 		bbg2.setColor(Color.DARK_GRAY);

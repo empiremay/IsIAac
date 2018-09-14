@@ -281,8 +281,8 @@ public class MainClass extends JFrame {
 		bbg2.setStroke(new BasicStroke(lineThickness));
 		int x_separation=30;
 		int y_separation=30+yOffset;
-		int bar_width=75;
-		int bar_height=15;
+		int bar_width=75;	//100
+		int bar_height=15;	//20
 		
 		int currentLife=life;
 		if(life<0) {
