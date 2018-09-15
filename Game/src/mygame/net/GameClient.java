@@ -16,8 +16,10 @@ import mygame.net.packets.Packet03ShootMissile;
 import mygame.net.packets.Packet04UpdateMissile;
 import mygame.net.packets.Packet05InitializeRectangles;
 import mygame.net.packets.Packet06PlayerCollision;
-import mygame.net.packets.Packet07SendLifeBar;
+import mygame.net.packets.Packet07SendLifeBars;
 import mygame.net.packets.Packet10QuitLifeBar;
+import mygame.net.packets.Packet12UpdateRectangle;
+import mygame.net.packets.Packet13UpdateHP;
 import mygame.net.packets.Packet.PacketTypes;
 
 public class GameClient extends Thread {
@@ -93,13 +95,21 @@ public class GameClient extends Thread {
 				packet=new Packet06PlayerCollision(data);
 				handlePlayerCollision((Packet06PlayerCollision)packet);
 				break;
-			case SENDLIFEBAR:
-				packet=new Packet07SendLifeBar(data);
-				handleSendLifeBar((Packet07SendLifeBar)packet);
+			case SENDLIFEBARS:
+				packet=new Packet07SendLifeBars(data);
+				handleSendLifeBars((Packet07SendLifeBars)packet);
 				break;
 			case QUITLIFEBAR:
 				packet=new Packet10QuitLifeBar(data);
 				handleQuitLifeBar((Packet10QuitLifeBar)packet);
+				break;
+			case UPDATERECTANGLE:
+				packet=new Packet12UpdateRectangle(data);
+				handleUpdateRectangle((Packet12UpdateRectangle)packet);
+				break;
+			case UPDATEHP:
+				packet=new Packet13UpdateHP(data);
+				handleUpdateHP((Packet13UpdateHP)packet);
 				break;
 		}
 	}
@@ -130,14 +140,22 @@ public class GameClient extends Thread {
 	}
 	
 	private void handlePlayerCollision(Packet06PlayerCollision packet) {
-		this.game.playerCollision(packet.getUsername(), packet.getLife(), packet.getMissileIndex());
+		this.game.playerCollision(packet.getUsername(), packet.getMissileIndex());
 	}
 	
-	private void handleSendLifeBar(Packet07SendLifeBar packet) {
-		this.game.sendLifeBar(packet.getUsername(), packet.getLife());
+	private void handleSendLifeBars(Packet07SendLifeBars packet) {
+		this.game.sendLifeBar(packet.getPlayersHP());
 	}
 	
 	private void handleQuitLifeBar(Packet10QuitLifeBar packet) {
 		this.game.quitLifeBar(packet.getUsername());
+	}
+	
+	private void handleUpdateRectangle(Packet12UpdateRectangle packet) {
+		this.game.killRectangle(packet.getIndex(), packet.getX(), packet.getY(), packet.getAncho(), packet.getAlto());
+	}
+	
+	private void handleUpdateHP(Packet13UpdateHP packet) {
+		this.game.updateHP(packet.getUsername(), packet.getDamage());
 	}
 }

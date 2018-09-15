@@ -6,7 +6,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import mygame.*;
@@ -18,7 +20,10 @@ public class GameServer extends Thread {
 	private DatagramSocket socket;
 	private MainClass game;
 	private List<PlayerMP> connectedPlayers=new ArrayList<PlayerMP>();
+	private Map<String, Integer> playersHP=new HashMap<String, Integer>();
 	static Random rnd=new Random();
+	
+	int numPeticionesUpdateRectangle=0;
 	
 	Rectangle rectangle;
 	
@@ -74,11 +79,13 @@ public class GameServer extends Thread {
 				PlayerMP loginPlayer=getPlayerMP(playerUsername);
 				
 				//Initialize rectangles packet
-				packet=new Packet05InitializeRectangles(rectangle.getX(), rectangle.getY(), rectangle.getXSize(), rectangle.getYSize(), rectangle.getLife());
+				packet=new Packet05InitializeRectangles(rectangle.getX(), rectangle.getY(), rectangle.getXSize(), rectangle.getYSize(), rectangle.getLife(), playerUsername);
 				this.handleInitializeRectangles((Packet05InitializeRectangles)packet);
 				//Send Life Bar packet
-				packet=new Packet07SendLifeBar(playerUsername, loginPlayer.getLife());
-				this.handleSendLifeBar((Packet07SendLifeBar)packet);
+				playersHP.put(playerUsername, loginPlayer.getLife());
+				//packet=new Packet07SendLifeBar(playerUsername, loginPlayer.getLife());
+				packet=new Packet07SendLifeBars(playersHP);
+				this.handleSendLifeBars((Packet07SendLifeBars)packet);
 				break;
 			case DISCONNECT:
 				//Quit Life Bar packet
@@ -107,6 +114,25 @@ public class GameServer extends Thread {
 			case PLAYERCOLLISION:
 				packet=new Packet06PlayerCollision(data);
 				this.handlePlayerCollision((Packet06PlayerCollision)packet);
+				break;
+			case RECEIVERECTANGLEINDEX:
+				++numPeticionesUpdateRectangle;
+				if(numPeticionesUpdateRectangle==connectedPlayers.size()) {
+					numPeticionesUpdateRectangle=0;
+					packet=new Packet11ReceiveRectangleIndex(data);
+					int index=((Packet11ReceiveRectangleIndex)packet).getIndex();
+					int ancho=rnd.nextInt(80)+20;
+					int alto=rnd.nextInt(80)+20;
+					int x=rnd.nextInt(MainClass.WINDOW_WIDTH-ancho);
+					int y=rnd.nextInt(MainClass.WINDOW_HEIGHT-ancho);
+					packet=new Packet12UpdateRectangle(index, x, y, ancho, alto);
+					this.handleUpdateRectangle((Packet12UpdateRectangle)packet);
+				}
+				break;
+			case UPDATEHP:
+				packet=new Packet13UpdateHP(data);
+				this.handleUpdateHP((Packet13UpdateHP)packet);
+				break;
 		}
 	}
 
@@ -174,6 +200,14 @@ public class GameServer extends Thread {
 		}
 	}
 	
+	public void sendDataToOnlyUsername(byte[] data, String username) {
+		for(PlayerMP p: connectedPlayers) {
+			if(p.getUsername().equals(username)) {
+				sendData(data, p.ipAddress, p.port);
+			}
+		}
+	}
+	
 	public void sendDataToAllClientsExceptUsername(byte[] data, String username) {
 		for(PlayerMP p: connectedPlayers) {
 			if(p.getUsername().equals(username)==false) {
@@ -216,11 +250,19 @@ public class GameServer extends Thread {
 		}
 	}
 	
-	private void handleSendLifeBar(Packet07SendLifeBar packet) {
+	private void handleSendLifeBars(Packet07SendLifeBars packet) {
 		packet.writeData(this);
 	}
 	
 	private void handleQuitLifeBar(Packet10QuitLifeBar packet) {
+		packet.writeData(this);
+	}
+	
+	private void handleUpdateRectangle(Packet12UpdateRectangle packet) {
+		packet.writeData(this);
+	}
+	
+	private void handleUpdateHP(Packet13UpdateHP packet) {
 		packet.writeData(this);
 	}
 }

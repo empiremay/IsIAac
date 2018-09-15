@@ -14,6 +14,7 @@ import mygame.net.packets.Packet02Move;
 import mygame.net.packets.Packet03ShootMissile;
 import mygame.net.packets.Packet04UpdateMissile;
 import mygame.net.packets.Packet06PlayerCollision;
+import mygame.net.packets.Packet13UpdateHP;
 
 public class Player {
 
@@ -26,11 +27,11 @@ public class Player {
 	static Random rnd=new Random();
 	long tiempoUltimoMisil=0;
 	long tiempoEntreMisiles=200;	//200
-	int missileSize=50;//PLAYER_WIDTH/2+1;
+	int missileSize=PLAYER_WIDTH/2+1;
 	int missileSeparation=2;
 	String missileColor="RED";
 	int avanceMisil=5;		//5
-	double missileReduction=0.125*2;	//0.125;
+	double missileReduction=0.125;	//0.125;
 	int life=0;
 	int damagedLife=0;	//Vida en rojo al dañarse y en amarillo al dañarse mucho
 	int regenLife;
@@ -145,6 +146,7 @@ public class Player {
 			Packet02Move packet=new Packet02Move(username, newX, newY);
 			packet.writeData(MainClass.game.socketClient);
 		}
+		
 	}
 	
 	void UpdatePlayerMissiles() {
@@ -214,32 +216,27 @@ public class Player {
 	}
 	
 	void UpdatePlayerCollisions(List<PlayerMP> players) {
-		//Missile collisions
+		//Mis misiles colisionan con algún jugador
 		for(int j=0; j<players.size(); j++) {
-			//if(players.get(j).getUsername().equals(username)==false) {
-				List<Missile> playerMissiles=players.get(j).GetMissiles();
-				for(int i=0; i<playerMissiles.size(); i++) {
-					Missile m=playerMissiles.get(i);
-					if(((m.getX()+m.getSize()/2)>x) && ((m.getY()-m.getSize()/2)<(y+PLAYER_HEIGHT)) && ((m.getY()+m.getSize()/2)>y) && ((m.getX()-m.getSize()/2)<(x+PLAYER_WIDTH))) {	//Hay colisión
-						int random=rnd.nextInt(2);
-						if(random==0) {
-							UpdateHP((int)(life-m.getSize()));
-						}
-						else {
-							UpdateHP((int)(life+m.getSize()));
-						}
-						playerMissiles.remove(i);
-						Enrojecer();
+			PlayerMP p=players.get(j);
+			if(p.getUsername().equals(username)==false) {
+				for(int i=0; i<missiles.size(); i++) {
+					Missile m=missiles.get(i);
+					if(((m.getX()+m.getSize()/2)>p.x) && ((m.getY()-m.getSize()/2)<(p.y+PLAYER_HEIGHT)) && ((m.getY()+m.getSize()/2)>p.y) && ((m.getX()-m.getSize()/2)<(p.x+PLAYER_WIDTH))) {	//Hay colisión
+						missiles.remove(i);
+						//Mandar paquete de actualización de vida a p.getUsername() y a mí mismo
+						Packet13UpdateHP packet=new Packet13UpdateHP(p.getUsername(), m.getSize()/2);
+						packet.writeData(MainClass.game.socketClient);
 						//Mandar paquete al server
-						//Packet06PlayerCollision packet=new Packet06PlayerCollision(username, life, i);
-						//packet.writeData(MainClass.game.socketClient);
+						Packet06PlayerCollision packet2=new Packet06PlayerCollision(username, i);	//username es el owner del misil e 'i' es el indice
+						packet2.writeData(MainClass.game.socketClient);
 					}
 				}
-			//}
+			}
 		}
 	}
 	
-	void UpdateHP(int life) {
+	public void UpdateHP(int life) {
 		int damage=this.life-life;
 		int regen=life-this.life;
 		if(life<0) {
@@ -304,7 +301,7 @@ public class Player {
 		Graphics2D bbg2=(Graphics2D)bbg;
 		int lineThickness=2;
 		bbg2.setStroke(new BasicStroke(lineThickness));
-		int x_separation=30;
+		int x_separation=20;
 		int y_separation=40;
 		int bar_width=100;
 		int bar_height=20;
@@ -329,7 +326,7 @@ public class Player {
 		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-currentLife), y_separation, damagedLife, bar_height);
 		//No Life
 		bbg2.setColor(Color.BLACK);
-		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-(currentLife+damagedLife)), y_separation, bar_width-(currentLife+damagedLife), bar_height);
+		bbg2.fillRect(MainClass.WINDOW_WIDTH-1-x_separation-(bar_width-(currentLife+damagedLife)), y_separation, (bar_width-(currentLife+damagedLife)), bar_height);
 		
 		//Marco exterior
 		bbg2.setColor(Color.DARK_GRAY);

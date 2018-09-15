@@ -3,23 +3,21 @@ package mygame.net.packets;
 import mygame.net.GameClient;
 import mygame.net.GameServer;
 
-public class Packet06PlayerCollision extends Packet {
+public class Packet06PlayerCollision extends Packet {	//Usado tambien para actualizaciones de vida
 
 	String username;
-	int life;
 	int missileIndex;
 	
 	public Packet06PlayerCollision(byte[] data) {
 		super(06);
 		String[] dataArray=readData(data).split(",");
 		this.username=dataArray[0];
-		this.life=Integer.parseInt(dataArray[1]);
+		this.missileIndex=Integer.parseInt(dataArray[1]);
 	}
 	
-	public Packet06PlayerCollision(String username, int life, int missileIndex) {
+	public Packet06PlayerCollision(String username, int missileIndex) {
 		super(06);
 		this.username=username;
-		this.life=life;
 		this.missileIndex=missileIndex;
 	}
 
@@ -33,15 +31,11 @@ public class Packet06PlayerCollision extends Packet {
 	}
 
 	public byte[] getData() {
-		return ("06"+this.username+","+this.life+","+this.missileIndex).getBytes();
+		return ("06"+this.username+","+this.missileIndex).getBytes();
 	}
 	
 	public String getUsername() {
 		return username;
-	}
-	
-	public int getLife() {
-		return life;
 	}
 	
 	public int getMissileIndex() {
