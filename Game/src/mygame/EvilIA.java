@@ -146,13 +146,13 @@ public class EvilIA {
 		if((x+missileSize)>player.x && (x-missileSize)<player.x) {	//Disparar arriba o abajo
 			if(y>player.y) {	//Disparar arriba
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-					eviliaMissiles.add(new Missile(x+WIDTH/2, y-missileSeparation-missileSize/2, missileSize, 0, missileColor, avanceMisil, missileReduction));
+					eviliaMissiles.add(new Missile("EVILIA", x+WIDTH/2, y-missileSeparation-missileSize/2, missileSize, 0, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();
 				}
 			}
 			else {					//Disparar abajo
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-					eviliaMissiles.add(new Missile(x+WIDTH/2, y+HEIGHT+missileSeparation+missileSize/2, missileSize, 1, missileColor, avanceMisil, missileReduction));
+					eviliaMissiles.add(new Missile("EVILIA", x+WIDTH/2, y+HEIGHT+missileSeparation+missileSize/2, missileSize, 1, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();
 				}
 			}
@@ -160,13 +160,13 @@ public class EvilIA {
 		if((y+missileSize)>player.y && (y-missileSize)<player.y) {	//Disparar izquierda o derecha
 			if(x>player.x) {	//Disparar izquierda
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-					eviliaMissiles.add(new Missile(x-missileSeparation-missileSize/2, y+HEIGHT/2, missileSize, 2, missileColor, avanceMisil, missileReduction));
+					eviliaMissiles.add(new Missile("EVILIA", x-missileSeparation-missileSize/2, y+HEIGHT/2, missileSize, 2, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();
 				}
 			}
 			else {					//Disparar derecha
 				if((System.currentTimeMillis() - tiempoUltimoMisil) >= tiempoEntreMisiles) {
-					eviliaMissiles.add(new Missile(x+WIDTH+missileSeparation+missileSize/2, y+HEIGHT/2, missileSize, 3, missileColor, avanceMisil, missileReduction));
+					eviliaMissiles.add(new Missile("EVILIA", x+WIDTH+missileSeparation+missileSize/2, y+HEIGHT/2, missileSize, 3, missileColor, avanceMisil, missileReduction));
 					tiempoUltimoMisil=System.currentTimeMillis();
 				}
 			}

@@ -1,6 +1,5 @@
 package mygame;
 import java.util.List;
-import java.util.ArrayList;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -26,6 +25,8 @@ public class MainClass extends JFrame {
 	Insets insets;
 	public InputHandler input;
 	public WindowHandler windowHandler;
+	Map<String, Integer> playersHP=new HashMap<String, Integer>();
+	String username;
 	
 	List<PlayerMP> players=new ArrayList<PlayerMP>();		//MP Players, including player1
 	List<Missile> eviliaMissiles=new ArrayList<Missile>();
@@ -68,7 +69,7 @@ public class MainClass extends JFrame {
 		
 		
 		//Initialize net things
-		String ip_publica="localhost";//"84.125.220.44";
+		String ip_publica="90.168.229.154";
 		if(JOptionPane.showConfirmDialog(this, "Do you want to run the server?")==0) {
 			socketServer=new GameServer(this);
 			socketServer.start();
@@ -76,7 +77,7 @@ public class MainClass extends JFrame {
 		socketClient=new GameClient(this, ip_publica);
 		socketClient.start();
 		
-		String username=JOptionPane.showInputDialog(this, "Your username:");
+		username=JOptionPane.showInputDialog(this, "Your username:");
 		
 		String[] missileColors= {"RED", "CYAN"};
 		String missileColor=(String)JOptionPane.showInputDialog(null, "Choose projectile color:", "Elegir", JOptionPane.QUESTION_MESSAGE, null, missileColors, missileColors[0]);
@@ -86,7 +87,7 @@ public class MainClass extends JFrame {
 		
 		Packet00Login loginPacket=new Packet00Login(player.getUsername(), player.getMissileColor());
 		if(socketServer!=null) {
-			socketServer.addConnection((PlayerMP)player, loginPacket);
+			socketServer.addConnection((PlayerMP)player, loginPacket, true);
 		}
 		//socketClient.sendData("ping".getBytes());
 		loginPacket.writeData(socketClient);
@@ -118,18 +119,23 @@ public class MainClass extends JFrame {
 			Rectangle r=rectangles.get(i);
 			r.Update(players, eviliaMissiles);
 			if(r.isDead()) {
-				rectangles.remove(i);
-				int ancho=rnd.nextInt(40)+20;
-				int alto=rnd.nextInt(40)+20;
-				rectangles.add(new Rectangle(rnd.nextInt(WINDOW_WIDTH-ancho), rnd.nextInt(WINDOW_HEIGHT-ancho), ancho, alto, 100));
-				if(rnd.nextInt(4)==0) {
+				//Notificar al server
+				Packet11ReceiveRectangleIndex packet=new Packet11ReceiveRectangleIndex(i);
+				packet.writeData(socketClient);
+				/*if(rnd.nextInt(4)==0) {
 					//Generar otro rectángulo
 					ancho=rnd.nextInt(40)+20;
 					alto=rnd.nextInt(40)+20;
 					rectangles.add(new Rectangle(rnd.nextInt(WINDOW_WIDTH-ancho), rnd.nextInt(WINDOW_HEIGHT-ancho), ancho, alto, 100));
-				}
+				}*/
 			}
 		}
+	}
+	
+	public void killRectangle(int index, int x, int y, int ancho, int alto) {
+		rectangles.remove(index);
+		int size=ancho*alto;
+		rectangles.add(new Rectangle(x, y, ancho, alto, size/10));
 	}
 	
 	/*void UpdateEvilIA() {
@@ -148,6 +154,10 @@ public class MainClass extends JFrame {
 	
 	void UpdatePlayerMissiles() {
 		players.get(0).UpdatePlayerMissiles();
+	}
+	
+	void UpdatePlayerCollisions() {
+		players.get(0).UpdatePlayerCollisions(players);
 	}
 	
 	public void AddPlayerMP(PlayerMP player) {
@@ -183,7 +193,7 @@ public class MainClass extends JFrame {
 	
 	public void shootMissile(String username, int x, int y, double size, int direction, Color color, int avance, double missileReduction) {
 		int index=getPlayerMPindex(username);
-		Missile m=new Missile(x, y, (int)size, direction, color, avance, missileReduction);
+		Missile m=new Missile(username, x, y, (int)size, direction, color, avance, missileReduction);
 		players.get(index).AddMissile(m);
 	}
 	
@@ -196,12 +206,58 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	public void playerCollision(String username, int missileIndex) {
+		int playerIndex=getPlayerMPindex(username);
+		PlayerMP p=players.get(playerIndex);
+		List<Missile> missiles=p.GetMissiles();
+		missiles.remove(missileIndex);
+	}
+	
+	public void updateHP(String username, double damage) {
+		int index=getPlayerMPindex(username);
+		if(username.equals(this.username)) {
+			//Actualizar mi vida
+			int currentLife=players.get(0).getLife();
+			players.get(0).UpdateHP((int)(currentLife-damage));
+		}
+		else {
+			//Actualizar la vida del otro jugador
+			int currentLife=playersHP.get(username);
+			int resultLife=(int)(currentLife-damage);
+			int playerIndex=getPlayerMPindex(username);
+			if(resultLife>players.get(playerIndex).MAX_LIFE) {
+				resultLife=players.get(playerIndex).MAX_LIFE;
+			}
+			playersHP.put(username, resultLife);
+		}
+	}
+	
+	public void sendLifeBar(Map<String, Integer> hps) {
+		for(Map.Entry<String, Integer> entry: hps.entrySet()) {
+			if(entry.getKey().equals(username)==false) {
+				playersHP.put(entry.getKey(), entry.getValue());
+			}
+		}
+	}
+	
+	public void quitLifeBar(String username) {
+		playersHP.remove(username);
+	}
+	
 	void Update() {
 		UpdatePlayerPosition();
 		UpdatePlayerMissiles();
+		UpdatePlayerCollisions();
 		//UpdateEvilIA();
 		//UpdateEvilIAMissiles();
-		//UpdateRectangles();
+		UpdateRectangles();
+		if(players.get(0).getLife()<=0) {
+			//Death();
+		}
+	}
+	
+	void Death() {
+		input=null;
 	}
 	
 	void DrawMissiles(Graphics bbg) {
@@ -214,11 +270,12 @@ public class MainClass extends JFrame {
 				m.Draw(bbg);
 			}
 		}
+		
 		//Draw evilIA missiles
-		for(int i=0; i<eviliaMissiles.size(); i++) {
+		/*for(int i=0; i<eviliaMissiles.size(); i++) {
 			Missile m=eviliaMissiles.get(i);
 			m.Draw(bbg);
-		}
+		}*/
 	}
 	
 	void DrawRectangles(Graphics bbg) {
@@ -242,6 +299,65 @@ public class MainClass extends JFrame {
 		}
 	}
 	
+	void DrawPlayerLife(Graphics bbg) {
+		players.get(0).DrawLifeBar(bbg);
+	}
+	
+	void DrawPlayerMPsLife(Graphics bbg) {
+		int yOffset=0;
+		for(Map.Entry<String, Integer> entry: playersHP.entrySet()) {
+			DrawPlayerMPLife(entry.getKey(), entry.getValue(), bbg, yOffset);
+			yOffset+=50;
+		}
+	}
+	
+	void DrawPlayerMPLife(String username, int life, Graphics bbg, int yOffset) {
+		int playerIndex=getPlayerMPindex(username);
+		PlayerMP player=players.get(playerIndex);
+		
+		Graphics2D bbg2=(Graphics2D)bbg;
+		int lineThickness=2;
+		bbg2.setStroke(new BasicStroke(lineThickness));
+		int x_separation=20;
+		int y_separation=30+yOffset;
+		int bar_width=75;	//100
+		int bar_height=15;	//20
+		
+		int currentLife=life;
+		if(life<0) {
+			currentLife=0;
+		}
+		currentLife*=(double)bar_width/100;
+		
+		/*
+		//Nombre
+		bbg2.setColor(Color.BLACK);
+		bbg2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		bbg2.drawString(username.toUpperCase(), x_separation, y_separation);
+		
+		y_separation+=5;
+		//Life
+		bbg2.setColor(new Color(34, 230, 22));
+		bbg2.fillRect(x_separation, y_separation, currentLife, bar_height);
+		bbg2.setColor(Color.BLACK);
+		bbg2.fillRect(x_separation+currentLife, y_separation, bar_width-currentLife, bar_height);
+		
+		//Marco exterior
+		bbg2.setColor(Color.DARK_GRAY);
+		bbg2.drawRect(x_separation, y_separation, bar_width, bar_height);
+		*/
+		
+		//Life
+		bbg2.setColor(new Color(34, 230, 22));
+		bbg2.fillRect(player.x, player.y-15, currentLife, bar_height);
+		bbg2.setColor(Color.BLACK);
+		bbg2.fillRect(player.x+currentLife, player.y-15, bar_width-currentLife, bar_height);
+		
+		//Marco exterior
+		bbg2.setColor(Color.DARK_GRAY);
+		bbg2.drawRect(player.x, player.y-15, bar_width, bar_height);
+	}
+	
 	void Draw() {
 		Graphics g=getGraphics();
 		Graphics bbg=backBuffer.getGraphics();
@@ -253,6 +369,9 @@ public class MainClass extends JFrame {
 		DrawPlayerMPs(bbg);		//Jugadores online
 		//DrawEvilIAs(bbg);
 		DrawRectangles(bbg);
+		//Latest thing to draw is life:
+		DrawPlayerLife(bbg);
+		DrawPlayerMPsLife(bbg);
 		
 		g.drawImage(backBuffer, insets.left, insets.top, this);
 	}

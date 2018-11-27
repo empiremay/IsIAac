@@ -6,7 +6,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import mygame.*;
@@ -18,9 +20,14 @@ public class GameServer extends Thread {
 	private DatagramSocket socket;
 	private MainClass game;
 	private List<PlayerMP> connectedPlayers=new ArrayList<PlayerMP>();
+	private Map<String, Integer> playersHP=new HashMap<String, Integer>();
 	static Random rnd=new Random();
+	private String adminUsername;
+	
+	int numPeticionesUpdateRectangle=0;
 	
 	Rectangle rectangle;
+	private boolean adminAdded=false;
 	
 	public GameServer(MainClass game) {
 		this.game=game;
@@ -38,21 +45,6 @@ public class GameServer extends Thread {
 		rectangle=new Rectangle(rnd.nextInt(MainClass.WINDOW_WIDTH-ancho), rnd.nextInt(MainClass.WINDOW_HEIGHT-ancho), ancho, alto, 100);
 	}
 	
-	private void UpdateMissiles() {
-		for(int i=0; i<connectedPlayers.size(); i++) {
-			PlayerMP player=connectedPlayers.get(i);
-			List<Missile> missiles=player.GetMissiles();
-			for(int j=0; j<missiles.size(); j++) {
-				connectedPlayers.get(i).missiles.get(j).Update();
-				if(connectedPlayers.get(i).missiles.get(j).isDead()) {
-					connectedPlayers.get(i).missiles.remove(j);
-				}
-				//Packet packet=new Packet04UpdateMissile(player.getUsername(), missiles.get(j));
-				//this.handleUpdateMissile((Packet04UpdateMissile)packet);
-			}
-		}
-	}
-	
 	public void run() {
 		while(true) {
 			byte[] data=new byte[1024];		//Data array that will be sent to the server
@@ -63,7 +55,6 @@ public class GameServer extends Thread {
 				e.printStackTrace();
 			}
 			this.parsePacket(packet.getData(), packet.getAddress(), packet.getPort());
-			//UpdateMissiles();
 			/*String message=new String(packet.getData());
 			System.out.println("CLIENT ["+packet.getAddress().getHostAddress()+":"+packet.getPort()+"] > "+message);
 			if(message.trim().equalsIgnoreCase("ping")) {
@@ -82,14 +73,32 @@ public class GameServer extends Thread {
 				break;
 			case LOGIN:
 				packet=new Packet00Login(data);
+				String playerUsername=((Packet00Login)packet).getUsername();
+				//Check if username is connected
+				CheckIfAlreadyConnected(playerUsername);
+				
 				System.out.println("["+address.getHostAddress()+":"+port+"] "+((Packet00Login)packet).getUsername()+" has connected");
 				PlayerMP player=new PlayerMP(MainClass.WINDOW_WIDTH/2, MainClass.WINDOW_HEIGHT/2, ((Packet00Login)packet).getUsername(), ((Packet00Login)packet).getMissileColor(), address, port);
 				this.addConnection(player, (Packet00Login)packet);
+				PlayerMP loginPlayer=getPlayerMP(playerUsername);
+				
 				//Initialize rectangles packet
-				packet=new Packet05InitializeRectangles(rectangle.getX(), rectangle.getY(), rectangle.getXSize(), rectangle.getYSize(), rectangle.getLife());
+				packet=new Packet05InitializeRectangles(rectangle.getX(), rectangle.getY(), rectangle.getXSize(), rectangle.getYSize(), rectangle.getLife(), playerUsername);
 				this.handleInitializeRectangles((Packet05InitializeRectangles)packet);
+				//Send Life Bar packet
+				playersHP.put(playerUsername, loginPlayer.getLife());
+				//packet=new Packet07SendLifeBar(playerUsername, loginPlayer.getLife());
+				packet=new Packet07SendLifeBars(playersHP);
+				this.handleSendLifeBars((Packet07SendLifeBars)packet);
 				break;
 			case DISCONNECT:
+				//Quit Life Bar packet
+				packet=new Packet01Disconnect(data);
+				String playerUsername2=((Packet01Disconnect)packet).getUsername();
+				packet=new Packet10QuitLifeBar(playerUsername2);
+				this.handleQuitLifeBar((Packet10QuitLifeBar)packet);
+				
+				//Logout
 				packet=new Packet01Disconnect(data);
 				System.out.println("["+address.getHostAddress()+":"+port+"] "+((Packet01Disconnect)packet).getUsername()+" has disconnected");
 				this.removeConnection((Packet01Disconnect)packet);
@@ -106,9 +115,31 @@ public class GameServer extends Thread {
 				packet=new Packet04UpdateMissile(data);
 				this.handleUpdateMissile((Packet04UpdateMissile)packet);
 				break;
+			case PLAYERCOLLISION:
+				packet=new Packet06PlayerCollision(data);
+				this.handlePlayerCollision((Packet06PlayerCollision)packet);
+				break;
+			case RECEIVERECTANGLEINDEX:
+				++numPeticionesUpdateRectangle;
+				if(numPeticionesUpdateRectangle==connectedPlayers.size()) {
+					numPeticionesUpdateRectangle=0;
+					packet=new Packet11ReceiveRectangleIndex(data);
+					int index=((Packet11ReceiveRectangleIndex)packet).getIndex();
+					int ancho=rnd.nextInt(80)+20;
+					int alto=rnd.nextInt(80)+20;
+					int x=rnd.nextInt(MainClass.WINDOW_WIDTH-ancho);
+					int y=rnd.nextInt(MainClass.WINDOW_HEIGHT-ancho);
+					packet=new Packet12UpdateRectangle(index, x, y, ancho, alto);
+					this.handleUpdateRectangle((Packet12UpdateRectangle)packet);
+				}
+				break;
+			case UPDATEHP:
+				packet=new Packet13UpdateHP(data);
+				this.handleUpdateHP((Packet13UpdateHP)packet);
+				break;
 		}
 	}
-
+	
 	public void addConnection(PlayerMP player, Packet00Login packet) {
 		boolean alreadyConnected=false;
 		for(PlayerMP p:this.connectedPlayers) {
@@ -130,6 +161,29 @@ public class GameServer extends Thread {
 		}
 		if(!alreadyConnected) {
 			this.connectedPlayers.add(player);
+		}
+	}
+
+	public void addConnection(PlayerMP player, Packet00Login packet, boolean isAdmin) {
+		this.addConnection(player,  packet);
+		this.adminUsername=player.getUsername();
+		if(!this.adminAdded) {
+			this.adminAdded=true;
+		}
+	}
+	
+	private void CheckIfAlreadyConnected(String username) {
+		boolean alreadyConnected=false;
+		for(PlayerMP p:this.connectedPlayers) {
+			if(p.getUsername().equals(username) && !adminUsername.equals(username)) {
+				alreadyConnected=true;
+			}
+		}
+		if(alreadyConnected) {
+			System.out.println("BAIA");
+		}
+		else {
+			System.out.println("TODO NORMAL");
 		}
 	}
 	
@@ -173,12 +227,17 @@ public class GameServer extends Thread {
 		}
 	}
 	
-	public void sendDataToAllClientsExceptUsername(byte[] data, String username) {
+	public void sendDataToOnlyUsername(byte[] data, String username) {
 		for(PlayerMP p: connectedPlayers) {
 			if(p.getUsername().equals(username)) {
-				//Nothing
+				sendData(data, p.ipAddress, p.port);
 			}
-			else {
+		}
+	}
+	
+	public void sendDataToAllClientsExceptUsername(byte[] data, String username) {
+		for(PlayerMP p: connectedPlayers) {
+			if(p.getUsername().equals(username)==false) {
 				sendData(data, p.ipAddress, p.port);
 			}
 		}
@@ -209,6 +268,28 @@ public class GameServer extends Thread {
 	}
 	
 	private void handleInitializeRectangles(Packet05InitializeRectangles packet) {
+		packet.writeData(this);
+	}
+	
+	private void handlePlayerCollision(Packet06PlayerCollision packet) {
+		if(getPlayerMP(packet.getUsername())!=null) {
+			packet.writeData(this);
+		}
+	}
+	
+	private void handleSendLifeBars(Packet07SendLifeBars packet) {
+		packet.writeData(this);
+	}
+	
+	private void handleQuitLifeBar(Packet10QuitLifeBar packet) {
+		packet.writeData(this);
+	}
+	
+	private void handleUpdateRectangle(Packet12UpdateRectangle packet) {
+		packet.writeData(this);
+	}
+	
+	private void handleUpdateHP(Packet13UpdateHP packet) {
 		packet.writeData(this);
 	}
 }

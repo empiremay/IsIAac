@@ -10,6 +10,7 @@ public class Packet05InitializeRectangles extends Packet {
 	int xSize;
 	int ySize;
 	double life;		//from 0 to 100
+	String username;
 	
 	public Packet05InitializeRectangles(byte[] data) {
 		super(05);
@@ -19,15 +20,17 @@ public class Packet05InitializeRectangles extends Packet {
 		this.xSize=Integer.parseInt(dataArray[2]);
 		this.ySize=Integer.parseInt(dataArray[3]);
 		this.life=Double.parseDouble(dataArray[4]);
+		this.username=dataArray[5];
 	}
 	
-	public Packet05InitializeRectangles(int x, int y, int xSize, int ySize, double life) {
+	public Packet05InitializeRectangles(int x, int y, int xSize, int ySize, double life, String username) {
 		super(05);
 		this.x=x;
 		this.y=y;
 		this.xSize=xSize;
 		this.ySize=ySize;
 		this.life=life;
+		this.username=username;
 	}
 
 	public void writeData(GameClient client) {
@@ -35,11 +38,11 @@ public class Packet05InitializeRectangles extends Packet {
 	}
 
 	public void writeData(GameServer server) {
-		server.sendDataToAllClients(getData());
+		server.sendDataToOnlyUsername(getData(), username);
 	}
 
 	public byte[] getData() {
-		return ("05"+this.x+","+this.y+","+this.xSize+","+this.ySize+","+this.life).getBytes();
+		return ("05"+this.x+","+this.y+","+this.xSize+","+this.ySize+","+this.life+","+this.username).getBytes();
 	}
 	
 	public int getX() {

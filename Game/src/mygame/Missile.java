@@ -3,6 +3,7 @@ import java.awt.*;
 
 public class Missile {
 	
+	String username;	//Owner of the missile
 	int x;
 	int y;
 	double size;
@@ -11,7 +12,8 @@ public class Missile {
 	int avance;
 	double missileReduction;
 	
-	public Missile(int x, int y, int size, int direction, Color color, int avance, double missileReduction) {
+	public Missile(String username, int x, int y, int size, int direction, Color color, int avance, double missileReduction) {
+		this.username=username;
 		this.x=x;
 		this.y=y;
 		this.size=size;
@@ -24,6 +26,9 @@ public class Missile {
 	public void Draw(Graphics bbg) {
 		bbg.setColor(color);
 		bbg.fillOval(x-(int)(size/2), y-(int)(size/2), (int)size, (int)size);
+		/*Graphics2D bbg2=(Graphics2D)bbg;
+		bbg2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		bbg2.drawString(username, x-username.length()*2, y-15);*/
 	}
 	
 	public void Update() {
@@ -85,5 +90,9 @@ public class Missile {
 	
 	public double getMissileReduction() {
 		return missileReduction;
+	}
+	
+	public String getUsername() {
+		return username;
 	}
 }
